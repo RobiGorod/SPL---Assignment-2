@@ -1,5 +1,8 @@
 package bgu.spl.mics;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * The MicroService is an abstract class that any micro-service in the system
  * must extend. The abstract MicroService class is responsible to get and
@@ -22,6 +25,8 @@ public abstract class MicroService implements Runnable {
 
     private boolean terminated = false;
     private final String name;
+    private final MessageBus messageBus;
+     private final Map<Class<? extends Message>, Callback<?>> callbacks;
 
     /**
      * @param name the micro-service name (used mainly for debugging purposes -
@@ -29,6 +34,8 @@ public abstract class MicroService implements Runnable {
      */
     public MicroService(String name) {
         this.name = name;
+        this.messageBus = MessageBusImpl.getInstance(); // Get the singleton MessageBus
+        this.callbacks = new ConcurrentHashMap<>(); 
     }
 
     /**
@@ -53,7 +60,8 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
-        //TODO: implement this.
+        messageBus.subscribeEvent(type, this); // Register with the MessageBus
+        callbacks.put(type, callback); // Store the callback for this event type
     }
 
     /**
@@ -77,7 +85,8 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <B extends Broadcast> void subscribeBroadcast(Class<B> type, Callback<B> callback) {
-        //TODO: implement this.
+        messageBus.subscribeBroadcast(type, this); // Register with the MessageBus
+        callbacks.put(type, callback); // Store the callback for this broadcast type
     }
 
     /**
@@ -93,8 +102,7 @@ public abstract class MicroService implements Runnable {
      * 	       			null in case no micro-service has subscribed to {@code e.getClass()}.
      */
     protected final <T> Future<T> sendEvent(Event<T> e) {
-        //TODO: implement this.
-        return null; //TODO: delete this line :)
+        return messageBus.sendEvent(e); // Use the MessageBus to send the event
     }
 
     /**
@@ -104,7 +112,7 @@ public abstract class MicroService implements Runnable {
      * @param b The broadcast message to send
      */
     protected final void sendBroadcast(Broadcast b) {
-        //TODO: implement this.
+        messageBus.sendBroadcast(b); // Use the MessageBus to send the broadcast
     }
 
     /**
@@ -118,7 +126,7 @@ public abstract class MicroService implements Runnable {
      *               {@code e}.
      */
     protected final <T> void complete(Event<T> e, T result) {
-        //TODO: implement this.
+        messageBus.complete(e, result); // Use the MessageBus to complete the event
     }
 
     /**
@@ -148,10 +156,24 @@ public abstract class MicroService implements Runnable {
      */
     @Override
     public final void run() {
-        initialize();
-        while (!terminated) {
-            System.out.println("NOT IMPLEMENTED!!!"); //TODO: you should delete this line :)
-        }
-    }
+        messageBus.register(this); // Register the microservice with the MessageBus
+        initialize(); // Perform any microservice-specific initialization
 
+        while (!terminated) {
+            try {
+                Message message = messageBus.awaitMessage(this); // Block until a message is available
+                if (message != null) {
+                    @SuppressWarnings("unchecked")
+                    Callback<Message> callback = (Callback<Message>) callbacks.get(message.getClass());
+                    if (callback != null) {
+                        callback.call(message); // Execute the callback for the received message
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // Restore interrupted status
+            }
+        }
+
+        messageBus.unregister(this); // Unregister the microservice upon termination
+    }
 }
