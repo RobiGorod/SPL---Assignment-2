@@ -1,9 +1,14 @@
 package bgu.spl.mics;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * The {@link MessageBusImpl class is the implementation of the MessageBus interface.
@@ -24,10 +29,19 @@ public class MessageBusImpl implements MessageBus {
     // Maps a broadcast type to the list of subscribing microservices
     private final Map<Class<? extends Broadcast>, List<MicroService>> broadcastSubscribers;
 
-	// Private constructor
-    private MessageBusImpl() {};
+	// New field: Maps events to their corresponding Future objects
+    private final Map<Event<?>, Future<?>> eventFutures; 
 
-	// Static method to get the single instance
+
+	// Private constructor
+    private MessageBusImpl() {
+		microServiceQueues = new ConcurrentHashMap<>();
+        eventSubscribers = new ConcurrentHashMap<>();
+        broadcastSubscribers = new ConcurrentHashMap<>();
+		eventFutures = new ConcurrentHashMap<>();
+	};
+
+	// Public method to get the singleton instance
     public static synchronized MessageBus getInstance() {
         if (instance == null) {
             instance = new MessageBusImpl();
@@ -38,52 +52,108 @@ public class MessageBusImpl implements MessageBus {
 	
 	@Override
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
-		// TODO Auto-generated method stub
-
-	}
+        eventSubscribers.putIfAbsent(type, new LinkedList<>());
+		synchronized(eventSubscribers.get(type)){
+        	eventSubscribers.get(type).add(m);
+		}
+    }
 
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m) {
-		// TODO Auto-generated method stub
+		 broadcastSubscribers.putIfAbsent(type, new ArrayList<>());
+		 synchronized(broadcastSubscribers.get(type)){
+         broadcastSubscribers.get(type).add(m);
+		 }
 
 	}
 
 	@Override
 	public <T> void complete(Event<T> e, T result) {
-		// TODO Auto-generated method stub
-
-	}
+		 // Resolve the Future associated with the event
+		 Future<T> future = (Future<T>) eventFutures.remove(e); // Remove the mapping after resolving
+		 if (future != null) {
+			 future.resolve(result); // Set the result of the Future
+		 }
+	 }
 
 	@Override
 	public void sendBroadcast(Broadcast b) {
-		// TODO Auto-generated method stub
+		 List<MicroService> subscribers;
+        synchronized (this) {
+            subscribers = broadcastSubscribers.getOrDefault(b.getClass(), Collections.emptyList());
+        }
+        // Add the broadcast message to each subscriber's queue
+		synchronized(subscribers){
+        	for (MicroService microService : subscribers) {
+            	BlockingQueue<Message> queue = microServiceQueues.get(microService);
+            	if (queue != null) {
+                	queue.add(b);
+            	}
+        	}
+		}
+    }
 
-	}
 
 	
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
-		// TODO Auto-generated method stub
-		return null;
+		Queue<MicroService> subscribers = eventSubscribers.getOrDefault(e.getClass(), null);
+
+    	if (subscribers == null || subscribers.isEmpty()) {
+        	return null; // No subscribers for this event
+    	}
+
+    	MicroService microService;
+    	synchronized (subscribers) { // Synchronize only on the queue for round-robin
+        	microService = subscribers.poll(); // Get the next subscriber
+        	subscribers.add(microService); // Add it back to the queue
+    	}
+
+    	BlockingQueue<Message> queue = microServiceQueues.get(microService);
+    	if (queue != null) {
+        	Future<T> future = new Future<>(); // Create a Future for the event
+        	eventFutures.put(e, future); // Store the mapping between the event and its Future
+        	queue.add(e); // Add the event to the microservice's queue
+        	return future; // Return the Future to the sender
+    	}
+
+    	return null;
 	}
+	
 
 	@Override
 	public void register(MicroService m) {
-		// TODO Auto-generated method stub
+		microServiceQueues.putIfAbsent(m, new LinkedBlockingQueue<>());
 
 	}
 
 	@Override
 	public void unregister(MicroService m) {
-		// TODO Auto-generated method stub
+		microServiceQueues.remove(m);
 
+		eventSubscribers.values().forEach(queue -> {
+			synchronized (queue) {
+				queue.remove(m);
+			}
+		});
+	
+		broadcastSubscribers.values().forEach(list -> {
+			synchronized (list) {
+				list.remove(m);
+			}
+		});
 	}
+
 
 	@Override
 	public Message awaitMessage(MicroService m) throws InterruptedException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+		BlockingQueue<Message> queue = microServiceQueues.get(m);
+        if (queue == null) {
+            throw new IllegalStateException("Microservice is not registered.");
+        }
+        return queue.take(); // Blocking call until a message is available
+    }
+	
 
 	
 
