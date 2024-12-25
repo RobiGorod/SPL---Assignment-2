@@ -1,5 +1,8 @@
 package bgu.spl.mics.application.objects;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Manages the fusion of sensor data for simultaneous localization and mapping (SLAM).
  * Combines data from multiple sensors (e.g., LiDAR, camera) to build and update a global map.
@@ -7,7 +10,38 @@ package bgu.spl.mics.application.objects;
  */
 public class FusionSlam {
     // Singleton instance holder
-    private static class FusionSlamHolder {
-        // TODO: Implement singleton instance logic.
+    private static FusionSlam instance;
+
+    // Fields
+    private final List<LandMark> landmarks; // Represents the map of the environment
+    private final List<Pose> poses;        // Represents previous poses needed for calculations
+
+    
+    private FusionSlam() {
+        this.landmarks = new ArrayList<>();
+        this.poses = new ArrayList<>();
     }
+
+   
+    // Provides access to the single instance of FusionSlam.
+  
+    public static synchronized FusionSlam getInstance() {
+        if (instance == null) {
+            instance = new FusionSlam();
+        }
+        return instance;
+    }
+
+   // Retrieves the list of landmarks in the environment map.
+
+   public List<LandMark> getLandmarks() {
+       return landmarks;
+   }
+
+   // Retrieves the list of previous poses needed for SLAM calculations.
+    
+   public List<Pose> getPoses() {
+       return poses;
+   }
+
 }
