@@ -17,8 +17,9 @@ import java.util.concurrent.LinkedBlockingQueue;
  * All other methods and members you add the class must be private.
  */
 public class MessageBusImpl implements MessageBus {
-	
-	private static MessageBus instance;
+	private static class messageBusHolder{
+		private static MessageBus instance = new MessageBusImpl();
+	}
 
     // Maps a microservice to its queue of messages
     private final Map<MicroService, BlockingQueue<Message>> microServiceQueues;
@@ -42,11 +43,8 @@ public class MessageBusImpl implements MessageBus {
 	};
 
 	// Public method to get the singleton instance
-    public static synchronized MessageBus getInstance() {
-        if (instance == null) {
-            instance = new MessageBusImpl();
-        }
-        return instance;
+    public static MessageBus getInstance() {
+       return messageBusHolder.instance;
     }
 
 	
@@ -70,6 +68,7 @@ public class MessageBusImpl implements MessageBus {
 	@Override
 	public <T> void complete(Event<T> e, T result) {
 		 // Resolve the Future associated with the event
+		 @SuppressWarnings("unchecked")
 		 Future<T> future = (Future<T>) eventFutures.remove(e); // Remove the mapping after resolving
 		 if (future != null) {
 			 future.resolve(result); // Set the result of the Future

@@ -9,8 +9,10 @@ import java.util.List;
  * Implements the Singleton pattern to ensure a single instance of FusionSlam exists.
  */
 public class FusionSlam {
+    private static class FusionSlamHolder{
     // Singleton instance holder
-    private static FusionSlam instance;
+    private static FusionSlam instance = new FusionSlam();
+    }
 
     // Fields
     private final List<LandMark> landmarks; // Represents the map of the environment
@@ -25,11 +27,8 @@ public class FusionSlam {
    
     // Provides access to the single instance of FusionSlam.
   
-    public static synchronized FusionSlam getInstance() {
-        if (instance == null) {
-            instance = new FusionSlam();
-        }
-        return instance;
+    public static FusionSlam getInstance() {
+        return FusionSlamHolder.instance;
     }
 
    // Retrieves the list of landmarks in the environment map.

@@ -26,7 +26,7 @@ public abstract class MicroService implements Runnable {
     private boolean terminated = false;
     private final String name;
     private final MessageBus messageBus;
-     private final Map<Class<? extends Message>, Callback<?>> callbacks;
+    private final Map<Class<? extends Message>, Callback<?>> callbacks;
 
     /**
      * @param name the micro-service name (used mainly for debugging purposes -
