@@ -68,6 +68,10 @@ public class CameraService extends MicroService {
     // Processes detected objects at the given tick and sends DetectObjectsEvents
 
     private void processDetectedObjects(int currentTick) {
+
+        // Set the Camera status to UP during processing
+        camera.setStatus(STATUS.UP);
+
         // Get the list of stamped detected objects
         List<StampedDetectedObjects> detectedObjectsList = camera.getDetectedObjectsList();
 

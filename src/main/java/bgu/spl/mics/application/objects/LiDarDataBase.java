@@ -33,7 +33,6 @@ public class LiDarDataBase {
      * @param filePath The path to the LiDAR data file.
      * @return The singleton instance of LiDarDataBase.
      */
-    //(!!!) needs to figure this parcing
     public static LiDarDataBase getInstance(String filePath) {
         LiDarDataBase instance = LiDarDataBaseHolder.instance;
         instance.loadData(filePath);
@@ -58,4 +57,9 @@ public class LiDarDataBase {
     public List<StampedCloudPoints> getCloudPoints() {
         return new ArrayList<>(cloudPoints); // Return a copy for immutability
     }
+
+    public static LiDarDataBase getInstance() {
+        LiDarDataBase instance = LiDarDataBaseHolder.instance;
+        return instance;
+    };
 }
