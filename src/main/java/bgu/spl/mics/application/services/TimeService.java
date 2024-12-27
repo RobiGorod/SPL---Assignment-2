@@ -21,7 +21,7 @@ public class TimeService extends MicroService {
      */
     public TimeService(int TickTime, int Duration) {
         super("TimeService");
-        this.TickTime = TickTime;
+        this.TickTime = TickTime * 1000;  // Convertion to milliseconds
         this.Duration = Duration;
     }
 
@@ -35,7 +35,7 @@ public class TimeService extends MicroService {
             try {
                 for (int currentTick = 1; currentTick <= Duration; currentTick++) {
                     sendBroadcast(new TickBroadcast(currentTick)); // Send a TickBroadcast
-                    Thread.sleep(TickTime * 1000); // Wait for the next tick
+                    Thread.sleep(TickTime); // Wait for the next tick
                 }
                 sendBroadcast(new TerminatedBroadcast()); // Send a TerminatedBroadcast
                 terminate(); // Terminate this service

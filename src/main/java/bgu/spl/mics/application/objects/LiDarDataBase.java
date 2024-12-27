@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -22,7 +23,7 @@ public class LiDarDataBase {
     private List<StampedCloudPoints> cloudPoints;
 
     private LiDarDataBase() {
-        this.cloudPoints = new ArrayList<>();
+        this.cloudPoints = new CopyOnWriteArrayList<>();
     }
 
 

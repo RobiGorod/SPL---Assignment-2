@@ -8,6 +8,7 @@ import bgu.spl.mics.application.messages.DetectObjectsEvent;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.Camera;
+import bgu.spl.mics.application.objects.STATUS;
 import bgu.spl.mics.application.objects.StampedDetectedObjects;
 import bgu.spl.mics.application.objects.StatisticalFolder;;
 
@@ -52,14 +53,14 @@ public class CameraService extends MicroService {
 
         // Subscribe to TerminatedBroadcast
         subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
-            System.out.println(getName() + " received TerminatedBroadcast. Terminating...");
+            camera.setStatus(STATUS.DOWN);
             terminate(); // Terminate the service
         });
 
         // Subscribe to CrashedBroadcast
         subscribeBroadcast(CrashedBroadcast.class, crashedBroadcast -> {
-            System.out.println(getName() + " received CrashedBroadcast from: " + crashedBroadcast);
-            // Handle any specific logic if needed, or simply log it
+            camera.setStatus(STATUS.ERROR);
+            terminate(); // Terminate the service due to the crash
         });
 
     }
@@ -76,9 +77,7 @@ public class CameraService extends MicroService {
                 sendEvent(new DetectObjectsEvent(stampedObjects.getDetectedObjects(), currentTick));
 
                 // Update the statistics
-                synchronized (statisticalFolder) {
-                    statisticalFolder.incrementDetectedObjects(stampedObjects.getDetectedObjects().size());
-                }
+                statisticalFolder.incrementDetectedObjects(stampedObjects.getDetectedObjects().size());
             }
         }
     }

@@ -1,7 +1,23 @@
 package bgu.spl.mics.application.services;
 
-import bgu.spl.mics.MicroService;
+import java.util.ArrayList;
+import java.util.List;
 
+
+import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.messages.CrashedBroadcast;
+import bgu.spl.mics.application.messages.DetectObjectsEvent;
+import bgu.spl.mics.application.messages.TerminatedBroadcast;
+import bgu.spl.mics.application.messages.TickBroadcast;
+import bgu.spl.mics.application.messages.TrackedObjectsEvent;
+import bgu.spl.mics.application.objects.LiDarDataBase;
+import bgu.spl.mics.application.objects.LiDarWorkerTracker;
+import bgu.spl.mics.application.objects.STATUS;
+import bgu.spl.mics.application.objects.StampedCloudPoints;
+import bgu.spl.mics.application.objects.StatisticalFolder;
+import bgu.spl.mics.application.objects.TrackedObject;
+import bgu.spl.mics.application.objects.CloudPoint;
+import bgu.spl.mics.application.objects.DetectedObject;
 /**
  * LiDarService is responsible for processing data from the LiDAR sensor and
  * sending TrackedObjectsEvents to the FusionSLAM service.
@@ -12,14 +28,19 @@ import bgu.spl.mics.MicroService;
  */
 public class LiDarService extends MicroService {
 
+    private final LiDarWorkerTracker LiDarWorkerTracker;
+    private final StatisticalFolder statisticalFolder;
+    private final LiDarDataBase liDarDataBase = LiDarDataBase.getInstance("lidar_data.json");
+
     /**
      * Constructor for LiDarService.
      *
      * @param LiDarWorkerTracker A LiDAR Tracker worker object that this service will use to process data.
      */
-    public LiDarService(LiDarWorkerTracker LiDarWorkerTracker) {
-        super("Change_This_Name");
-        // TODO Implement this
+    public LiDarService(LiDarWorkerTracker LiDarWorkerTracker, StatisticalFolder statisticalFolder,  LiDarDataBase liDarDataBase) {
+        super("LiDarWorkerService_" + LiDarWorkerTracker.getId());
+        this.LiDarWorkerTracker = LiDarWorkerTracker;
+        this.statisticalFolder = statisticalFolder;
     }
 
     /**
@@ -29,6 +50,74 @@ public class LiDarService extends MicroService {
      */
     @Override
     protected void initialize() {
-        // TODO Implement this
+        // (!!!) needs to check if needs to add somthing here
+        // Subscribe to TickBroadcast
+        subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
+        });
+
+        // Subscribe to TerminatedBroadcast
+        subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
+            LiDarWorkerTracker.setStatus(STATUS.DOWN); 
+            terminate();
+        });
+
+        // Subscribe to CrashedBroadcast
+        subscribeBroadcast(CrashedBroadcast.class, crashedBroadcast -> {
+            LiDarWorkerTracker.setStatus(STATUS.ERROR); 
+            terminate(); // Terminate the service due to the crash
+        });
+
+         // Subscribe to DetectObjectsEvent
+        subscribeEvent(DetectObjectsEvent.class, detectObjectsEvent -> {
+
+            try {
+                // Set worker status to UP during processing
+                LiDarWorkerTracker.setStatus(STATUS.UP);
+
+                //  Initialize Tracked Objects
+                List<TrackedObject> trackedObjects = new ArrayList<>();
+
+                // Match Detected Object with Cloud Points
+                for (DetectedObject detectedObject : detectObjectsEvent.getDetectedObjects()) {
+                    // Retrieve cloud points for the object
+                    List<StampedCloudPoints> matchingPoints = liDarDataBase.getCloudPoints().stream()
+                            .filter(point -> point.getId().equals(detectedObject.getId()))
+                            .toList();
+                
+
+                    // Create a TrackedObject for each matching cloud point
+                    for (StampedCloudPoints stampedPoint : matchingPoints) {
+                        // Convert List<List<Double>> to List<CloudPoint>
+                        List<CloudPoint> cloudPoints = stampedPoint.getCloudPoints().stream()
+                            .map(coord -> new CloudPoint(coord.get(0).intValue(), coord.get(1).intValue())) // Assuming CloudPoint(x, y)
+                            .toList();
+
+                        trackedObjects.add(new TrackedObject(
+                            detectedObject.getId(),
+                            stampedPoint.getTime(),
+                            detectedObject.getDescription(),
+                            cloudPoints
+                        ));
+                    }
+                }
+
+                // Update worker's last tracked objects
+                LiDarWorkerTracker.getLastTrackedObjects().clear();
+                LiDarWorkerTracker.getLastTrackedObjects().addAll(trackedObjects);
+
+                // Send a TrackedObjectsEvent to Fusion-SLAM
+                sendEvent(new TrackedObjectsEvent(trackedObjects));
+
+                // Respond to Camera with True result
+                complete(detectObjectsEvent, true);
+
+                // Update statistical folder
+                statisticalFolder.incrementTrackedObjects(trackedObjects.size());
+            
+        } catch (Exception e) {
+            LiDarWorkerTracker.setStatus(STATUS.ERROR);
+            complete(detectObjectsEvent, false); // Respond with failure to the Camera
+        }
+    });
     }
 }
