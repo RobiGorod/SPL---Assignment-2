@@ -13,7 +13,7 @@
     ],
     "camera_datas_path": "./camera_data.json"
   },
-  "Lidars": {
+  "LidarWorkers": {
     "LidarConfigurations":[{
       "id": 1,
       "frequency": 4
@@ -25,6 +25,6 @@
     "lidars_data_path":"./lidar_data.json"
   },
   "poseJsonFile": "./pose_data.json",
-  "TickTime": 1,
+  "TickTime": 3,
   "Duration": 300
 }
