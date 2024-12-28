@@ -78,13 +78,13 @@ public class LiDarService extends MicroService {
                 LiDarWorkerTracker.setStatus(STATUS.UP);
 
                 // Check if the event should be processed at this tick
-                if ((currentTick - detectObjectsEvent.getTime()) % LiDarWorkerTracker.getFrequency() == 0) {
+                if ((currentTick >= (detectObjectsEvent.getTime()) + LiDarWorkerTracker.getFrequency())) {
 
                     //  Initialize Tracked Objects
                     List<TrackedObject> trackedObjects = new ArrayList<>();
 
                     // Match Detected Object with Cloud Points
-                    for (DetectedObject detectedObject : detectObjectsEvent.getDetectedObjects()) {
+                    for (DetectedObject detectedObject : detectObjectsEvent.getDetectedObjects().getDetectedObjects()) {
                         // Retrieve cloud points for the object
                         List<StampedCloudPoints> matchingPoints = liDarDataBase.getCloudPoints().stream()
                                 .filter(point -> point.getId().equals(detectedObject.getId()))
