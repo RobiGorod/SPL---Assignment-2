@@ -78,7 +78,7 @@ public class CameraService extends MicroService {
         for (StampedDetectedObjects stampedObjects : detectedObjectsList) {
             if (isDetectionTimeValid(stampedObjects, currentTick)) {
                 // Create and send DetectObjectsEvent
-                sendEvent(new DetectObjectsEvent(stampedObjects.getDetectedObjects(), currentTick));
+                sendEvent(new DetectObjectsEvent(stampedObjects, currentTick));
 
                 // Update the statistics
                 statisticalFolder.incrementDetectedObjects(stampedObjects.getDetectedObjects().size());
