@@ -52,11 +52,11 @@ public class LiDarService extends MicroService {
      */
     @Override
     protected void initialize() {
-        // (!!!) needs to check if needs to add somthing here
         
         // Subscribe to TickBroadcast
         subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
             currentTick = tickBroadcast.getCurrentTick();
+
         });
 
         // Subscribe to TerminatedBroadcast
@@ -68,10 +68,15 @@ public class LiDarService extends MicroService {
         // Subscribe to CrashedBroadcast
         subscribeBroadcast(CrashedBroadcast.class, crashedBroadcast -> {
             LiDarWorkerTracker.setStatus(STATUS.ERROR); 
+
+            // Capture last frames (last tracked objects)
+            List<TrackedObject> lastTrackedObjects = LiDarWorkerTracker.getLastTrackedObjects();
+            CrashedBroadcast.updateLastLiDarFrames(LiDarWorkerTracker.getId(), lastTrackedObjects);
+
             terminate(); // Terminate the service due to the crash
         });
 
-         // Subscribe to DetectObjectsEvent
+        // Subscribe to DetectObjectsEvent
         subscribeEvent(DetectObjectsEvent.class, detectObjectsEvent -> {
             try {
                 // Set worker status to UP during processing
@@ -85,6 +90,15 @@ public class LiDarService extends MicroService {
 
                     // Match Detected Object with Cloud Points
                     for (DetectedObject detectedObject : detectObjectsEvent.getDetectedObjects().getDetectedObjects()) {
+                        // Check if the LiDAR worker is in error state
+                        if (detectedObject.getId() == "ERROR") {
+                            sendBroadcast(new CrashedBroadcast(
+                                "LiDAR sensor disconnected",
+                                "LiDarWorkerTracker"
+                            ));
+                            terminate();
+                            return;
+                        }
                         // Retrieve cloud points for the object
                         List<StampedCloudPoints> matchingPoints = liDarDataBase.getCloudPoints().stream()
                                 .filter(point -> point.getId().equals(detectedObject.getId()))
@@ -123,6 +137,11 @@ public class LiDarService extends MicroService {
             
         } catch (Exception e) {
             LiDarWorkerTracker.setStatus(STATUS.ERROR);
+            sendBroadcast(new CrashedBroadcast(
+                "LiDAR sensor disconnected",
+                "LiDarWorkerTracker"
+            ));
+            terminate();
             complete(detectObjectsEvent, false); // Respond with failure to the Camera
         }
     });

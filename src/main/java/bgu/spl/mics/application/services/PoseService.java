@@ -38,10 +38,8 @@ public class PoseService extends MicroService {
             gpsimu.setCurrentTick(tickBroadcast.getCurrentTick());
 
             // Retrieve the current pose from the pose list
-            Pose currentPose = gpsimu.getPoseList().stream()
-                .filter(pose -> pose.getTime() == gpsimu.getCurrentTick())
-                .findFirst()
-                .orElse(null);
+            Pose currentPose = gpsimu.getPoseAt(gpsimu.getCurrentTick());
+                
 
             // Send a PoseEvent with the current pose
             sendEvent(new PoseEvent(currentPose));

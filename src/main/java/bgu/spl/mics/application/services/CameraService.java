@@ -8,6 +8,7 @@ import bgu.spl.mics.application.messages.DetectObjectsEvent;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.Camera;
+import bgu.spl.mics.application.objects.DetectedObject;
 import bgu.spl.mics.application.objects.STATUS;
 import bgu.spl.mics.application.objects.StampedDetectedObjects;
 import bgu.spl.mics.application.objects.StatisticalFolder;;
@@ -45,11 +46,10 @@ public class CameraService extends MicroService {
         // Subscribe to TickBroadcast
         subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
             int currentTick = tickBroadcast.getCurrentTick();
+
             // Process detected objects
             processDetectedObjects(currentTick);
         });
-
-        //(!!!) needs to check what is the difference and what to implement
 
         // Subscribe to TerminatedBroadcast
         subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
@@ -60,6 +60,11 @@ public class CameraService extends MicroService {
         // Subscribe to CrashedBroadcast
         subscribeBroadcast(CrashedBroadcast.class, crashedBroadcast -> {
             camera.setStatus(STATUS.ERROR);
+
+            // Capture last frames (last detected objects)
+            List<StampedDetectedObjects> lastDetectedObjects = camera.getDetectedObjectsList();
+            CrashedBroadcast.updateLastCameraFrames(camera.getId(), lastDetectedObjects);
+
             terminate(); // Terminate the service due to the crash
         });
 
@@ -76,6 +81,18 @@ public class CameraService extends MicroService {
         List<StampedDetectedObjects> detectedObjectsList = camera.getDetectedObjectsList();
 
         for (StampedDetectedObjects stampedObjects : detectedObjectsList) {
+            // Check if the camera is in error state
+            for(DetectedObject object: stampedObjects.getDetectedObjects()){
+                if (object.getId() == "ERROR") {
+                    sendBroadcast(new CrashedBroadcast(
+                        object.getDescription(),
+                        "Cameras"
+                ));
+                terminate();
+                return;
+                }
+            }
+            
             if (isDetectionTimeValid(stampedObjects, currentTick)) {
                 // Create and send DetectObjectsEvent
                 sendEvent(new DetectObjectsEvent(stampedObjects, currentTick));

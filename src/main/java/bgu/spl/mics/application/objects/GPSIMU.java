@@ -20,7 +20,7 @@ public class GPSIMU {
     public int getCurrentTick() {
         return currentTick;
     }
-    
+
     public void setCurrentTick(int current){
         this.currentTick = current;
     }
@@ -35,5 +35,14 @@ public class GPSIMU {
 
     public List<Pose> getPoseList() {
         return poseList;
+    }
+
+    public Pose getPoseAt(int time) {
+        for (Pose pose : poseList) {
+            if (pose.getTime() == time) {
+                return pose;
+            }
+        }
+        return null; // Return null if no pose matches the time
     }
 }

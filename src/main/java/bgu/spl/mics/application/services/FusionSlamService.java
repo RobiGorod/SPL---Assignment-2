@@ -1,5 +1,15 @@
 package bgu.spl.mics.application.services;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
 import bgu.spl.mics.application.messages.PoseEvent;
@@ -10,6 +20,7 @@ import bgu.spl.mics.application.objects.FusionSlam;
 import bgu.spl.mics.application.objects.Pose;
 import bgu.spl.mics.application.objects.StatisticalFolder;
 import bgu.spl.mics.application.objects.TrackedObject;
+import bgu.spl.mics.application.objects.LandMark;
 
 /**
  * FusionSlamService integrates data from multiple sensors to build and update
@@ -22,16 +33,21 @@ public class FusionSlamService extends MicroService {
 
     private final FusionSlam fusionSlam;
     private final StatisticalFolder statisticalFolder;
+    private final AtomicInteger activeSensors;
     private int currentTick = 0;
+    private String errorDescription = null;
+    private String faultySensor = null;
+    private final Map<String, Object> lastFrames = new HashMap<>();
     /**
      * Constructor for FusionSlamService.
      *
      * @param fusionSlam The FusionSLAM object responsible for managing the global map.
      */
-    public FusionSlamService(FusionSlam fusionSlam, StatisticalFolder statisticalFolder) {
+    public FusionSlamService(FusionSlam fusionSlam, StatisticalFolder statisticalFolder, int activeSensors) {
         super("FusionSlamService");
         this.fusionSlam = fusionSlam;
         this.statisticalFolder = statisticalFolder;
+        this.activeSensors = new AtomicInteger(activeSensors);
     }
 
     /**
@@ -41,18 +57,28 @@ public class FusionSlamService extends MicroService {
      */
     @Override
     protected void initialize() {
-         // Subscribe to TickBroadcast
+        // Subscribe to TickBroadcast
         subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
             currentTick = tickBroadcast.getCurrentTick();
         });
 
         // Subscribe to TerminatedBroadcast
         subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
+            if (activeSensors.decrementAndGet() == 0) {
+                outputFinalState();
             terminate();
+            }
         });
 
         // Subscribe to CrashedBroadcast
         subscribeBroadcast(CrashedBroadcast.class, crashedBroadcast -> {
+            errorDescription = crashedBroadcast.getErrorDescription();
+            faultySensor = crashedBroadcast.getFaultySensor();
+
+            // Capture last frames from sensors
+            lastFrames.put("cameras", crashedBroadcast.getLastCameraFrames());
+            lastFrames.put("LiDarWorkers", crashedBroadcast.getLastLiDarFrames());
+            outputFinalState();
             terminate(); // Terminate the service due to a crash
         });
 
@@ -69,10 +95,9 @@ public class FusionSlamService extends MicroService {
                         // Update the map in FusionSLAM
                         if (fusionSlam.isNewLandmark(trackedObject)) {
                             fusionSlam.addLandmark(trackedObject);
-                            statisticalFolder.incrementNewLandmarks(); // Track new landmarks
+                            statisticalFolder.incrementLandmarks(1); // Track new landmarks
                         } else {
                             fusionSlam.updateLandmark(trackedObject);
-                            statisticalFolder.incrementUpdatedLandmarks(); // Track updated landmarks
                         }
                     }
                 }
@@ -94,5 +119,35 @@ public class FusionSlamService extends MicroService {
         });
     }
 
+     // Outputs the final state of the system to a JSON file.
+    private void outputFinalState() {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try (FileWriter writer = new FileWriter("output_file.json")) {
+            gson.toJson(new FinalState(statisticalFolder, fusionSlam.getLandmarks(), errorDescription, faultySensor, lastFrames, fusionSlam.getPoses()), writer);
+        } catch (IOException e) {
+            System.err.println("Error writing output file: " + e.getMessage());
+        }
     }
-}
+
+    }
+
+// A helper class representing the final state of the system for JSON output.
+class FinalState {
+    private final StatisticalFolder statistics;
+    private final List<LandMark> landmarks;
+    private final String error;
+    private final String faultySensor;
+    private final Map<String, Object> lastFrames;
+    private final List<Pose> poses;
+
+    public FinalState(StatisticalFolder statistics, List<LandMark> landmarks, String error, String faultySensor, Map<String, Object> lastFrames, List<Pose> poses) {
+        this.statistics = statistics;
+        this.landmarks = landmarks;
+        this.error = error;
+        this.faultySensor = faultySensor;
+        this.lastFrames = lastFrames;
+        this.poses = poses;
+    }
+   }
+
+

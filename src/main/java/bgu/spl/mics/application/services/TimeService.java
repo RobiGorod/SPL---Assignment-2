@@ -3,6 +3,7 @@ package bgu.spl.mics.application.services;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
+import bgu.spl.mics.application.objects.StatisticalFolder;
 
 /**
  * TimeService acts as the global timer for the system, broadcasting TickBroadcast messages
@@ -12,6 +13,7 @@ public class TimeService extends MicroService {
 
     private final int TickTime; // Duration of each tick in milliseconds
     private final int Duration; // Total number of ticks before termination
+    private final StatisticalFolder statisticalFolder;
 
     /**
      * Constructor for TimeService.
@@ -19,10 +21,11 @@ public class TimeService extends MicroService {
      * @param TickTime  The duration of each tick in milliseconds.
      * @param Duration  The total number of ticks before the service terminates.
      */
-    public TimeService(int TickTime, int Duration) {
+    public TimeService(int TickTime, int Duration, StatisticalFolder statisticalFolder) {
         super("TimeService");
         this.TickTime = TickTime * 1000;  // Convertion to milliseconds
         this.Duration = Duration;
+        this.statisticalFolder = statisticalFolder;
     }
 
     /**
@@ -34,7 +37,9 @@ public class TimeService extends MicroService {
          new Thread(() -> {
             try {
                 for (int currentTick = 1; currentTick <= Duration; currentTick++) {
+                    statisticalFolder.incrementSystemRuntime(1); // Update runtime
                     sendBroadcast(new TickBroadcast(currentTick)); // Send a TickBroadcast
+
                     Thread.sleep(TickTime); // Wait for the next tick
                 }
                 sendBroadcast(new TerminatedBroadcast()); // Send a TerminatedBroadcast
