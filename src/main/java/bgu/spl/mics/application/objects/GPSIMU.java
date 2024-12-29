@@ -20,6 +20,10 @@ public class GPSIMU {
     public int getCurrentTick() {
         return currentTick;
     }
+    
+    public void setCurrentTick(int current){
+        this.currentTick = current;
+    }
 
     public STATUS getStatus() {
         return status;
