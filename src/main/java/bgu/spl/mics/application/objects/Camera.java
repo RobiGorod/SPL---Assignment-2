@@ -39,5 +39,7 @@ public class Camera {
     public List<StampedDetectedObjects> getDetectedObjectsList() {
         return detectedObjectsList;
     }
+
+    public void setDetectedObjectsList(List<StampedDetectedObjects> d){this. detectedObjectsList = d;}
 }
 

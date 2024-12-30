@@ -22,16 +22,17 @@ public class MessageBusImpl implements MessageBus {
 	}
 
     // Maps a microservice to its queue of messages
-    private final Map<MicroService, BlockingQueue<Message>> microServiceQueues;
+	// Robi changed to public for tests
+    public final Map<MicroService, BlockingQueue<Message>> microServiceQueues;
 
     // Maps an event type to the list of subscribing microservices
-    private final Map<Class<? extends Event<?>>, Queue<MicroService>> eventSubscribers;
+	public final Map<Class<? extends Event<?>>, Queue<MicroService>> eventSubscribers;
 
     // Maps a broadcast type to the list of subscribing microservices
-    private final Map<Class<? extends Broadcast>, List<MicroService>> broadcastSubscribers;
+	public final Map<Class<? extends Broadcast>, List<MicroService>> broadcastSubscribers;
 
 	// New field: Maps events to their corresponding Future objects
-    private final Map<Event<?>, Future<?>> eventFutures; 
+	public final Map<Event<?>, Future<?>> eventFutures;
 
 
 	// Private constructor
@@ -61,6 +62,8 @@ public class MessageBusImpl implements MessageBus {
 		 broadcastSubscribers.putIfAbsent(type, new ArrayList<>());
 		 synchronized(broadcastSubscribers.get(type)){
          broadcastSubscribers.get(type).add(m);
+		 System.out.println("MicroService " + m.getName() + " subscribed to broadcast " + type.getSimpleName());
+
 		 }
 
 	}
@@ -87,7 +90,9 @@ public class MessageBusImpl implements MessageBus {
             	BlockingQueue<Message> queue = microServiceQueues.get(microService);
             	if (queue != null) {
                 	queue.add(b);
-            	}
+					System.out.println("Broadcast " + b.getClass().getSimpleName() + " added to queue of " + microService.getName());
+
+				}
         	}
 		}
     }
@@ -150,7 +155,8 @@ public class MessageBusImpl implements MessageBus {
         if (queue == null) {
             throw new IllegalStateException("Microservice is not registered.");
         }
-        return queue.take(); // Blocking call until a message is available
+		System.out.println("Awaiting message for MicroService " + m.getName());
+		return queue.take(); // Blocking call until a message is available
     }
 	
 

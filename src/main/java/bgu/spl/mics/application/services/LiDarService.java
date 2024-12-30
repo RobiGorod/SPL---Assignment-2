@@ -3,7 +3,7 @@ package bgu.spl.mics.application.services;
 import java.util.ArrayList;
 import java.util.List;
 
-
+import java.util.stream.Collectors;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
 import bgu.spl.mics.application.messages.DetectObjectsEvent;
@@ -102,7 +102,7 @@ public class LiDarService extends MicroService {
                         // Retrieve cloud points for the object
                         List<StampedCloudPoints> matchingPoints = liDarDataBase.getCloudPoints().stream()
                                 .filter(point -> point.getId().equals(detectedObject.getId()))
-                                .toList();
+                                .collect(Collectors.toList());
                     
 
                         // Create a TrackedObject for each matching cloud point
@@ -110,7 +110,7 @@ public class LiDarService extends MicroService {
                             // Convert List<List<Double>> to List<CloudPoint>
                             List<CloudPoint> cloudPoints = stampedPoint.getCloudPoints().stream()
                                 .map(coord -> new CloudPoint(coord.get(0).intValue(), coord.get(1).intValue())) // Assuming CloudPoint(x, y)
-                                .toList();
+                            .collect(Collectors.toList());
 
                             trackedObjects.add(new TrackedObject(
                                 detectedObject.getId(),

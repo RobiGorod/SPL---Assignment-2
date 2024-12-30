@@ -72,7 +72,8 @@ public class CameraService extends MicroService {
 
     // Processes detected objects at the given tick and sends DetectObjectsEvents
 
-    private void processDetectedObjects(int currentTick) {
+    //Robi changed from private to public to use in Camera Test
+    public void processDetectedObjects(int currentTick) {
 
         // Set the Camera status to UP during processing
         camera.setStatus(STATUS.UP);
@@ -109,5 +110,6 @@ public class CameraService extends MicroService {
         return stampedObjects.getTime() <= currentTick &&
                (currentTick - stampedObjects.getTime()) % camera.getFrequency() == 0;
     }
+
 
 }
