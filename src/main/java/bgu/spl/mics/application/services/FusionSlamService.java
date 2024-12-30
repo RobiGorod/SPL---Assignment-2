@@ -34,7 +34,6 @@ public class FusionSlamService extends MicroService {
     private final FusionSlam fusionSlam;
     private final StatisticalFolder statisticalFolder;
     private final AtomicInteger activeSensors;
-    private int currentTick = 0;
     private String errorDescription = null;
     private String faultySensor = null;
     private final Map<String, Object> lastFrames = new HashMap<>();
@@ -59,7 +58,6 @@ public class FusionSlamService extends MicroService {
     protected void initialize() {
         // Subscribe to TickBroadcast
         subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
-            currentTick = tickBroadcast.getCurrentTick();
         });
 
         // Subscribe to TerminatedBroadcast
@@ -76,8 +74,8 @@ public class FusionSlamService extends MicroService {
             faultySensor = crashedBroadcast.getFaultySensor();
 
             // Capture last frames from sensors
-            lastFrames.put("cameras", crashedBroadcast.getLastCameraFrames());
-            lastFrames.put("LiDarWorkers", crashedBroadcast.getLastLiDarFrames());
+            lastFrames.put("cameras", CrashedBroadcast.getLastCameraFrames());
+            lastFrames.put("LiDarWorkers", CrashedBroadcast.getLastLiDarFrames());
             outputFinalState();
             terminate(); // Terminate the service due to a crash
         });
@@ -88,23 +86,25 @@ public class FusionSlamService extends MicroService {
                 for (TrackedObject trackedObject : trackedObjectsEvent.getTrackedObjects()) {
                     // Retrieve the pose at the detection timestamp
                     Pose poseAtDetectionTime = fusionSlam.getPoseAt(trackedObject.getTime());
-                    if (poseAtDetectionTime != null) {
-                        // Transform the object's coordinates to the global coordinate system
-                        fusionSlam.transformCoordinatesToGlobal(trackedObject, poseAtDetectionTime);
+                    if (poseAtDetectionTime == null) {
+                        complete(trackedObjectsEvent, null); // Skip if necessary data is missing
+                        return;
+                    }
+                    // Transform the object's coordinates to the global coordinate system
+                    fusionSlam.transformCoordinatesToGlobal(trackedObject, poseAtDetectionTime);
 
-                        // Update the map in FusionSLAM
-                        if (fusionSlam.isNewLandmark(trackedObject)) {
-                            fusionSlam.addLandmark(trackedObject);
-                            statisticalFolder.incrementLandmarks(1); // Track new landmarks
-                        } else {
-                            fusionSlam.updateLandmark(trackedObject);
-                        }
+                    // Update the map in FusionSLAM
+                    if (fusionSlam.isNewLandmark(trackedObject)) {
+                        fusionSlam.addLandmark(trackedObject);
+                        statisticalFolder.incrementLandmarks(1); // Track new landmarks
+                    } else {
+                        fusionSlam.updateLandmark(trackedObject);
                     }
                 }
                 // Complete the event successfully
-                complete(trackedObjectsEvent, true);
+                complete(trackedObjectsEvent, null);
             } catch (Exception e) {
-                complete(trackedObjectsEvent, false); // Mark the event as failed if an error occurs
+                complete(trackedObjectsEvent, null); // Mark the event as failed if an error occurs
             }
         });
 
@@ -112,9 +112,9 @@ public class FusionSlamService extends MicroService {
         subscribeEvent(PoseEvent.class, poseEvent -> {
             try {
                 fusionSlam.updatePose(poseEvent.getPose());
-                complete(poseEvent, true); // Complete the event successfully
+                complete(poseEvent, null); // Complete the event successfully
             } catch (Exception e) {
-                complete(poseEvent, false); // Mark the event as failed if an error occurs
+                complete(poseEvent, null); // Mark the event as failed if an error occurs
             }
         });
     }
