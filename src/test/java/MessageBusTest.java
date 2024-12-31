@@ -1,11 +1,21 @@
-import bgu.spl.mics.*;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.*;
+import bgu.spl.mics.Broadcast;
+import bgu.spl.mics.Event;
+import bgu.spl.mics.Future;
+import bgu.spl.mics.Message;
+import bgu.spl.mics.MessageBusImpl;
+import bgu.spl.mics.MicroService;
 
 public class MessageBusTest {
     private MessageBusImpl messageBus;
