@@ -34,7 +34,6 @@ public class TimeService extends MicroService {
      */
     @Override
     protected void initialize() {
-         new Thread(() -> {
             try {
                 for (int currentTick = 1; currentTick <= Duration; currentTick++) {
                     statisticalFolder.incrementSystemRuntime(1); // Update runtime
@@ -48,6 +47,6 @@ public class TimeService extends MicroService {
                 Thread.currentThread().interrupt();
                 System.err.println(getName() + " was interrupted.");
             }
-        }).start();
+
     }
 }

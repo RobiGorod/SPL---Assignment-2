@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "GurionRockRunner",
+            "request": "launch",
+            "mainClass": "bgu.spl.mics.application.GurionRockRunner",
+            "projectName": "spl224ass2"
+        },
+        {
+            "type": "java",
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}"

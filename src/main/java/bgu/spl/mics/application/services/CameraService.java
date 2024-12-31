@@ -30,8 +30,8 @@ public class CameraService extends MicroService {
      *
      * @param camera The Camera object that this service will use to detect objects.
      */
-    public CameraService(Camera camera, StatisticalFolder statisticalFolder) {
-        super("CameraService_" + camera.getId());
+    public CameraService(Camera camera, StatisticalFolder statisticalFolder, String name) {
+        super(name);
         this.camera = camera;
         this.statisticalFolder = statisticalFolder;
     }
