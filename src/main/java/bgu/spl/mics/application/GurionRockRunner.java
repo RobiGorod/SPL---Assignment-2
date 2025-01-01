@@ -58,7 +58,7 @@ public class GurionRockRunner {
          // Initialize Statistical Folder
         StatisticalFolder statisticalFolder = new StatisticalFolder(0,0,0,0);
         
-        String configPath = args[0];
+        String configPath = "C:\\Sapir\\לימודים\\SPL\\assignment 3\\example input\\configuration_file.json";
         try {
             // Parse configuration file
             JsonObject config = JsonParser.parseReader(new FileReader(configPath)).getAsJsonObject();
