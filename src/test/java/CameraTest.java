@@ -29,7 +29,7 @@ public class CameraTest  {
         Testcamera = new Camera(1, 2, STATUS.DOWN, Collections.emptyList());
         
         // Initialize CameraService with the above objects
-        TestcameraService = new CameraService(Testcamera, TeststatisticalFolder);
+        TestcameraService = new CameraService(Testcamera, TeststatisticalFolder, "Canera1");
     }
 
     @Test
