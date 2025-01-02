@@ -68,6 +68,7 @@ public class FusionSlamService extends MicroService {
             if (remainingSensors == 0) {
                 outputFinalState();
                 terminate();
+                
             }
         });
 
