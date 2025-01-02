@@ -69,8 +69,16 @@ public class GurionRockRunner {
 
             List<Camera> cameras = new ArrayList<>();
             List<MicroService> services = new ArrayList<>();
-            String cameraDataPath = config.getAsJsonObject("Cameras").get("camera_datas_path").getAsString();
-            config.getAsJsonArray("Cameras").forEach(cameraConfig -> {
+            // Access the "Cameras" object
+            JsonObject camerasObject = config.getAsJsonObject("Cameras");
+
+            // Get the "camera_datas_path" field
+            String cameraDataPath = camerasObject.get("camera_datas_path").getAsString();
+
+            // Get the "CamerasConfigurations" array
+            JsonArray cameraConfigurations = camerasObject.getAsJsonArray("CamerasConfigurations");
+
+            cameraConfigurations.forEach(cameraConfig -> {
                 JsonObject cameraJson = cameraConfig.getAsJsonObject();
                 Camera camera = new Camera(
                         cameraJson.get("id").getAsInt(),

@@ -22,7 +22,8 @@
             "name": "GurionRockRunner",
             "request": "launch",
             "mainClass": "bgu.spl.mics.application.GurionRockRunner",
-            "projectName": "spl225ass2"
+            "projectName": "spl225ass2",
+            "args": ["C:\\Sapir\\לימודים\\SPL\\assignment 3\\example_input_2\\configuration_file.json"]
         },
         {
             "type": "java",
