@@ -58,13 +58,16 @@ public class FusionSlamService extends MicroService {
     protected void initialize() {
         // Subscribe to TickBroadcast
         subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
+            System.out.println(getName() + " received TickBroadcast: " + tickBroadcast.getCurrentTick());
         });
 
         // Subscribe to TerminatedBroadcast
         subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
-            if (activeSensors.decrementAndGet() == 0) {
+            int remainingSensors = activeSensors.decrementAndGet();
+            System.out.println("Current state of active sensors: " + remainingSensors);
+            if (remainingSensors == 0) {
                 outputFinalState();
-            terminate();
+                terminate();
             }
         });
 

@@ -1,9 +1,11 @@
 package bgu.spl.mics.application;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -47,33 +49,31 @@ public class GurionRockRunner {
      * @param args Command-line arguments. The first argument is expected to be the path to the configuration file.
      */
     public static void main(String[] args) {
-        if (args.length != 1) {
-            System.err.println("Usage: java GurionRockRunner <path-to-config-file>");
-            return;
-        }
-        // Initialize MessageBus 
-        MessageBus messageBus = MessageBusImpl.getInstance();
-
-
-         // Initialize Statistical Folder
-        StatisticalFolder statisticalFolder = new StatisticalFolder(0,0,0,0);
         
         String configPath = args[0];
+        CountDownLatch initializationLatch;
         try {
+            // Initialize MessageBus 
+            MessageBus messageBus = MessageBusImpl.getInstance();
+
+            // Initialize Statistical Folder
+            StatisticalFolder statisticalFolder = new StatisticalFolder(0,0,0,0);
+
             // Parse configuration file
             JsonObject config = JsonParser.parseReader(new FileReader(configPath)).getAsJsonObject();
-            int duration = config.get("Duration").getAsInt();
-            int tickTime = config.get("TickTime").getAsInt();
+
+            // Get the base directory of the configuration file
+            File configFile = new File(configPath);
+            String baseDir = configFile.getParent(); // Get the parent directory
 
             // Parse Cameras + services
-
             List<Camera> cameras = new ArrayList<>();
             List<MicroService> services = new ArrayList<>();
             // Access the "Cameras" object
             JsonObject camerasObject = config.getAsJsonObject("Cameras");
 
-            // Get the "camera_datas_path" field
-            String cameraDataPath = camerasObject.get("camera_datas_path").getAsString();
+            // Get the "camera_datas_path" field and resolve its absolute path
+            String cameraDataPath = new File(baseDir, camerasObject.get("camera_datas_path").getAsString()).getAbsolutePath();
 
             // Get the "CamerasConfigurations" array
             JsonArray cameraConfigurations = camerasObject.getAsJsonArray("CamerasConfigurations");
@@ -92,11 +92,20 @@ public class GurionRockRunner {
                 services.add(new CameraService(camera, statisticalFolder, cameraJson.get("camera_key").getAsString()));
             });
 
-            LiDarDataBase liDarDataBase = LiDarDataBase.getInstance("lidar_data.json");
+            // Access the "LiDarWorkers" object
+            JsonObject lidarWorkersObject = config.getAsJsonObject("LiDarWorkers");
+
+            // Get the "lidars_data_path" field and resolve its absolute path
+            String lidarDataPath = new File(baseDir, lidarWorkersObject.get("lidars_data_path").getAsString()).getAbsolutePath();
+
+            LiDarDataBase liDarDataBase = LiDarDataBase.getInstance(lidarDataPath);
+
+            // Get the "LidarConfigurations" array
+            JsonArray lidarConfigurations = lidarWorkersObject.getAsJsonArray("LidarConfigurations");
 
             // Parse LiDAR Workers
             List<LiDarWorkerTracker> lidarWorkers = new ArrayList<>();
-            config.getAsJsonArray("LidarWorkers").forEach(lidarConfig -> {
+            lidarConfigurations.forEach(lidarConfig -> {
                 JsonObject lidarJson = lidarConfig.getAsJsonObject();
                 LiDarWorkerTracker worker = new LiDarWorkerTracker(
                         lidarJson.get("id").getAsInt(),
@@ -113,18 +122,33 @@ public class GurionRockRunner {
             FusionSlam fusionSlam = FusionSlam.getInstance();
             services.add(new FusionSlamService(fusionSlam, statisticalFolder, cameras.size() + lidarWorkers.size()));
 
-            // Initialize Pose
-            String poseDataPath = config.get("poseJsonFile").getAsString();
+            
+            // Get the "poseJsonFile" field and resolve its absolute path
+            String poseDataPath = new File(baseDir, config.get("poseJsonFile").getAsString()).getAbsolutePath();
             services.add(new PoseService(new GPSIMU(0, STATUS.UP, fromPoseJsonToPosesList(poseDataPath)))); // Add PoseService
 
-            //Initialize time service
-            services.add(new TimeService(tickTime, duration, statisticalFolder)); // Add TimeService
+            // Initialize time service
+            int tickTime = config.get("TickTime").getAsInt();
+            int duration = config.get("Duration").getAsInt();
+            
+            // Create latch for initialization synchronization
+            initializationLatch = new CountDownLatch(services.size());
 
             // Start the Services
             services.forEach(service -> {
                 Thread serviceThread = new Thread(service);
                 serviceThread.start();
+                initializationLatch.countDown(); // Signal this service is initialized
             });
+
+            // Wait for all services to initialize
+            initializationLatch.await();
+
+            // Start the TimeService after all services are ready
+            TimeService timeService = new TimeService(tickTime, duration, statisticalFolder);
+            Thread timeServiceThread = new Thread(timeService);
+            timeServiceThread.start();
+
 
         } catch (Exception e) {
             e.printStackTrace();
