@@ -2,6 +2,7 @@ package bgu.spl.mics.application.services;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +35,7 @@ public class FusionSlamService extends MicroService {
     private final FusionSlam fusionSlam;
     private final StatisticalFolder statisticalFolder;
     private final AtomicInteger activeSensors;
+     private final CountDownLatch initializationLatch;
     private String errorDescription = null;
     private String faultySensor = null;
     private final Map<String, Object> lastFrames = new HashMap<>();
@@ -42,11 +44,12 @@ public class FusionSlamService extends MicroService {
      *
      * @param fusionSlam The FusionSLAM object responsible for managing the global map.
      */
-    public FusionSlamService(FusionSlam fusionSlam, StatisticalFolder statisticalFolder, int activeSensors) {
+    public FusionSlamService(FusionSlam fusionSlam, StatisticalFolder statisticalFolder,  CountDownLatch initializationLatch, int activeSensors) {
         super("FusionSlamService");
         this.fusionSlam = fusionSlam;
         this.statisticalFolder = statisticalFolder;
         this.activeSensors = new AtomicInteger(activeSensors);
+        this.initializationLatch = initializationLatch;
     }
 
     /**
@@ -56,71 +59,70 @@ public class FusionSlamService extends MicroService {
      */
     @Override
     protected void initialize() {
-        // Subscribe to TickBroadcast
-        subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
-            System.out.println(getName() + " received TickBroadcast: " + tickBroadcast.getCurrentTick());
-        });
-
-        // Subscribe to TerminatedBroadcast
-        subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
-            int remainingSensors = activeSensors.decrementAndGet();
-            System.out.println("Current state of active sensors: " + remainingSensors);
-            if (remainingSensors == 0) {
-                outputFinalState();
-                terminate();
-                
-            }
-        });
-
-        // Subscribe to CrashedBroadcast
-        subscribeBroadcast(CrashedBroadcast.class, crashedBroadcast -> {
-            errorDescription = crashedBroadcast.getErrorDescription();
-            faultySensor = crashedBroadcast.getFaultySensor();
-
-            // Capture last frames from sensors
-            lastFrames.put("cameras", CrashedBroadcast.getLastCameraFrames());
-            lastFrames.put("LiDarWorkers", CrashedBroadcast.getLastLiDarFrames());
-            outputFinalState();
-            terminate(); // Terminate the service due to a crash
-        });
-
-        // Subscribe to TrackedObjectsEvent
-        subscribeEvent(TrackedObjectsEvent.class, trackedObjectsEvent -> {
-            try {
-                for (TrackedObject trackedObject : trackedObjectsEvent.getTrackedObjects()) {
-                    // Retrieve the pose at the detection timestamp
-                    Pose poseAtDetectionTime = fusionSlam.getPoseAt(trackedObject.getTime());
-                    if (poseAtDetectionTime == null) {
-                        complete(trackedObjectsEvent, null); // Skip if necessary data is missing
-                        return;
-                    }
-                    // Transform the object's coordinates to the global coordinate system
-                    fusionSlam.transformCoordinatesToGlobal(trackedObject, poseAtDetectionTime);
-
-                    // Update the map in FusionSLAM
-                    if (fusionSlam.isNewLandmark(trackedObject)) {
-                        fusionSlam.addLandmark(trackedObject);
-                        statisticalFolder.incrementLandmarks(1); // Track new landmarks
-                    } else {
-                        fusionSlam.updateLandmark(trackedObject);
-                    }
+        try{
+            // Subscribe to TerminatedBroadcast
+            subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
+                int remainingSensors = activeSensors.decrementAndGet();
+                System.out.println("Current state of active sensors: " + remainingSensors);
+                if (remainingSensors == 0) {
+                    outputFinalState();
+                    terminate();
+                    
                 }
-                // Complete the event successfully
-                complete(trackedObjectsEvent, null);
-            } catch (Exception e) {
-                complete(trackedObjectsEvent, null); // Mark the event as failed if an error occurs
-            }
-        });
+            });
 
-        // Subscribe to PoseEvent to update the robot's pose
-        subscribeEvent(PoseEvent.class, poseEvent -> {
-            try {
-                fusionSlam.updatePose(poseEvent.getPose());
-                complete(poseEvent, null); // Complete the event successfully
-            } catch (Exception e) {
-                complete(poseEvent, null); // Mark the event as failed if an error occurs
-            }
-        });
+            // Subscribe to CrashedBroadcast
+            subscribeBroadcast(CrashedBroadcast.class, crashedBroadcast -> {
+                errorDescription = crashedBroadcast.getErrorDescription();
+                faultySensor = crashedBroadcast.getFaultySensor();
+
+                // Capture last frames from sensors
+                lastFrames.put("cameras", CrashedBroadcast.getLastCameraFrames());
+                lastFrames.put("LiDarWorkers", CrashedBroadcast.getLastLiDarFrames());
+                outputFinalState();
+                terminate(); // Terminate the service due to a crash
+            });
+
+            // Subscribe to TrackedObjectsEvent
+            subscribeEvent(TrackedObjectsEvent.class, trackedObjectsEvent -> {
+                try {
+                    for (TrackedObject trackedObject : trackedObjectsEvent.getTrackedObjects()) {
+                        // Retrieve the pose at the detection timestamp
+                        Pose poseAtDetectionTime = fusionSlam.getPoseAt(trackedObject.getTime());
+                        if (poseAtDetectionTime == null) {
+                            complete(trackedObjectsEvent, null); // Skip if necessary data is missing
+                            return;
+                        }
+                        // Transform the object's coordinates to the global coordinate system
+                        fusionSlam.transformCoordinatesToGlobal(trackedObject, poseAtDetectionTime);
+
+                        // Update the map in FusionSLAM
+                        if (fusionSlam.isNewLandmark(trackedObject)) {
+                            fusionSlam.addLandmark(trackedObject);
+                            statisticalFolder.incrementLandmarks(1); // Track new landmarks
+                        } else {
+                            fusionSlam.updateLandmark(trackedObject);
+                        }
+                    }
+                    // Complete the event successfully
+                    complete(trackedObjectsEvent, null);
+                } catch (Exception e) {
+                    complete(trackedObjectsEvent, null); // Mark the event as failed if an error occurs
+                }
+            });
+
+            // Subscribe to PoseEvent to update the robot's pose
+            subscribeEvent(PoseEvent.class, poseEvent -> {
+                try {
+                    fusionSlam.updatePose(poseEvent.getPose());
+                    complete(poseEvent, null); // Complete the event successfully
+                } catch (Exception e) {
+                    complete(poseEvent, null); // Mark the event as failed if an error occurs
+                }
+            });
+        } finally {
+            initializationLatch.countDown(); // Signal that initialization is complete
+        }
     }
 
      // Outputs the final state of the system to a JSON file.

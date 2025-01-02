@@ -90,7 +90,7 @@ public class MessageBusImpl implements MessageBus {
             	BlockingQueue<Message> queue = microServiceQueues.get(microService);
             	if (queue != null) {
                 	queue.add(b);
-					System.out.println("Broadcast " + b.getClass().getSimpleName() + " added to queue of " + microService.getName());
+					System.out.println("Broadcast " + b.getClass().getSimpleName() + " sent to " + microService.getName());
 
 				}
         	}
@@ -118,6 +118,7 @@ public class MessageBusImpl implements MessageBus {
         	Future<T> future = new Future<>(); // Create a Future for the event
         	eventFutures.put(e, future); // Store the mapping between the event and its Future
         	queue.add(e); // Add the event to the microservice's queue
+			System.out.println("Event " + e.getClass().getSimpleName() + " sent to " + microService.getName());
         	return future; // Return the Future to the sender
     	}
 

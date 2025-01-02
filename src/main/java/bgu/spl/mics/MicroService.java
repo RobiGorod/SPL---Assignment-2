@@ -144,7 +144,7 @@ public abstract class MicroService implements Runnable {
         
         this.terminated = true;
         //(!!!!) temporarly(?) to solve active sensors 
-        sendBroadcast(new TerminatedBroadcast());
+        //sendBroadcast(new TerminatedBroadcast());
     }
 
     /**

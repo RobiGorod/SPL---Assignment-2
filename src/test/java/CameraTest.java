@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +23,8 @@ public class CameraTest  {
 
     @BeforeEach
     public void setUp() {
+        // Initialize CountDownLatch with a count of 1 for the service under test
+        CountDownLatch initializationLatch = new CountDownLatch(1);
         // Initialize StatisticalFolder with zeroed values
         TeststatisticalFolder = new StatisticalFolder(0, 0, 0, 0);
         
@@ -29,7 +32,7 @@ public class CameraTest  {
         Testcamera = new Camera(1, 2, STATUS.DOWN, Collections.emptyList());
         
         // Initialize CameraService with the above objects
-        TestcameraService = new CameraService(Testcamera, TeststatisticalFolder, "Canera1");
+        TestcameraService = new CameraService(Testcamera, TeststatisticalFolder, initializationLatch, "Canera1");
     }
 
     @Test

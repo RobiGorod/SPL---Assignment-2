@@ -1,6 +1,7 @@
 package bgu.spl.mics.application.services;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
@@ -24,16 +25,18 @@ public class CameraService extends MicroService {
 
     private final Camera camera;
     private final StatisticalFolder statisticalFolder;
+    private final CountDownLatch initializationLatch;
 
     /**
      * Constructor for CameraService.
      *
      * @param camera The Camera object that this service will use to detect objects.
      */
-    public CameraService(Camera camera, StatisticalFolder statisticalFolder, String name) {
+    public CameraService(Camera camera, StatisticalFolder statisticalFolder, CountDownLatch initializationLatch, String name) {
         super(name);
         this.camera = camera;
         this.statisticalFolder = statisticalFolder;
+        this.initializationLatch = initializationLatch;
     }
 
     /**
@@ -43,30 +46,35 @@ public class CameraService extends MicroService {
      */
     @Override
     protected void initialize() {
-        // Subscribe to TickBroadcast
-        subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
-            int currentTick = tickBroadcast.getCurrentTick();
+        try{
+            // Subscribe to TickBroadcast
+            subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
+                int currentTick = tickBroadcast.getCurrentTick();
 
-            // Process detected objects
-            processDetectedObjects(currentTick);
-        });
+                // Process detected objects
+                processDetectedObjects(currentTick);
+            });
 
-        // Subscribe to TerminatedBroadcast
-        subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
-            camera.setStatus(STATUS.DOWN);
-            terminate(); // Terminate the service
-        });
+            // Subscribe to TerminatedBroadcast
+            subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
+                camera.setStatus(STATUS.DOWN);
+                terminate(); // Terminate the service
+            });
 
-        // Subscribe to CrashedBroadcast
-        subscribeBroadcast(CrashedBroadcast.class, crashedBroadcast -> {
-            camera.setStatus(STATUS.ERROR);
+            // Subscribe to CrashedBroadcast
+            subscribeBroadcast(CrashedBroadcast.class, crashedBroadcast -> {
+                camera.setStatus(STATUS.ERROR);
 
-            // Capture last frames (last detected objects)
-            List<StampedDetectedObjects> lastDetectedObjects = camera.getDetectedObjectsList();
-            CrashedBroadcast.updateLastCameraFrames(camera.getId(), lastDetectedObjects);
+                // Capture last frames (last detected objects)
+                List<StampedDetectedObjects> lastDetectedObjects = camera.getDetectedObjectsList();
+                CrashedBroadcast.updateLastCameraFrames(camera.getId(), lastDetectedObjects);
 
-            terminate(); // Terminate the service due to the crash
-        });
+                terminate(); // Terminate the service due to the crash
+            });
+
+        } finally {
+            initializationLatch.countDown(); // Signal that initialization is complete
+        }
 
     }
 
@@ -93,7 +101,7 @@ public class CameraService extends MicroService {
                 return;
                 }
             }
-            
+                
             if (isDetectionTimeValid(stampedObjects, currentTick)) {
                 // Create and send DetectObjectsEvent
                 sendEvent(new DetectObjectsEvent(stampedObjects, currentTick));

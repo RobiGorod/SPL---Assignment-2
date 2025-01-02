@@ -89,7 +89,6 @@ public class GurionRockRunner {
                 );
                 
                 cameras.add(camera);
-                services.add(new CameraService(camera, statisticalFolder, cameraJson.get("camera_key").getAsString()));
             });
 
             // Access the "LiDarWorkers" object
@@ -114,41 +113,46 @@ public class GurionRockRunner {
                         new ArrayList<>()
                 );
                 lidarWorkers.add(worker);
-                services.add(new LiDarService(worker, statisticalFolder, liDarDataBase));
+            });
+
+            // Create latch for initialization synchronization
+            initializationLatch = new CountDownLatch(cameras.size() + lidarWorkers.size() + 2); // +2 for FusionSlamService and PoseService
+
+            // Add Camera Services
+            cameras.forEach(camera -> {
+                services.add(new CameraService(camera, statisticalFolder, initializationLatch, "camera" + camera.getId()));
+            });
+
+            // Add LiDAR Services
+            lidarWorkers.forEach(worker -> {
+                services.add(new LiDarService(worker, statisticalFolder, liDarDataBase, initializationLatch));
             });
 
 
             // Initialize Fusion Slam (Singleton)
             FusionSlam fusionSlam = FusionSlam.getInstance();
-            services.add(new FusionSlamService(fusionSlam, statisticalFolder, cameras.size() + lidarWorkers.size()));
+            services.add(new FusionSlamService(fusionSlam, statisticalFolder, initializationLatch, cameras.size() + lidarWorkers.size()));
 
             
             // Get the "poseJsonFile" field and resolve its absolute path
             String poseDataPath = new File(baseDir, config.get("poseJsonFile").getAsString()).getAbsolutePath();
-            services.add(new PoseService(new GPSIMU(0, STATUS.UP, fromPoseJsonToPosesList(poseDataPath)))); // Add PoseService
-
-            // Initialize time service
-            int tickTime = config.get("TickTime").getAsInt();
-            int duration = config.get("Duration").getAsInt();
-            
-            // Create latch for initialization synchronization
-            initializationLatch = new CountDownLatch(services.size());
+            services.add(new PoseService(new GPSIMU(0, STATUS.UP, fromPoseJsonToPosesList(poseDataPath)), initializationLatch));
 
             // Start the Services
             services.forEach(service -> {
                 Thread serviceThread = new Thread(service);
                 serviceThread.start();
-                initializationLatch.countDown(); // Signal this service is initialized
             });
 
             // Wait for all services to initialize
             initializationLatch.await();
 
             // Start the TimeService after all services are ready
+            int tickTime = config.get("TickTime").getAsInt();
+            int duration = config.get("Duration").getAsInt();
             TimeService timeService = new TimeService(tickTime, duration, statisticalFolder);
             Thread timeServiceThread = new Thread(timeService);
             timeServiceThread.start();
-
 
         } catch (Exception e) {
             e.printStackTrace();
