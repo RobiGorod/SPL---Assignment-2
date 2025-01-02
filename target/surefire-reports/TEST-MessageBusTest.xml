@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="FusionSlamTest" time="0.057" tests="3" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="MessageBusTest" time="0.245" tests="6" errors="0" skipped="0" failures="0">
   <properties>
     <property name="awt.toolkit" value="sun.awt.X11.XToolkit"/>
     <property name="file.encoding.pkg" value="sun.io"/>
@@ -58,7 +58,60 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="52.0"/>
   </properties>
-  <testcase name="testTransformCoordinatesToGlobal" classname="FusionSlamTest" time="0.041"/>
-  <testcase name="testTransformTrackedObjectsToLandmarks_NewLandmark" classname="FusionSlamTest" time="0.012"/>
-  <testcase name="testTransformTrackedObjectsToLandmarks_UpdateLandmark" classname="FusionSlamTest" time="0.001"/>
+  <testcase name="testRegisterAndUnregister" classname="MessageBusTest" time="0.017">
+    <system-out><![CDATA[MicroService Service1 subscribed to broadcast TestBroadcast
+MicroService Service2 subscribed to broadcast TestBroadcast
+Broadcast TestBroadcast sent to Service1
+Broadcast TestBroadcast sent to Service2
+Awaiting message for MicroService Service1
+Awaiting message for MicroService Service2
+TearDown: Cleared internal data structures of MessageBus.
+TearDown: Cleaned up all resources after test.
+]]></system-out>
+  </testcase>
+  <testcase name="testSubscribeEventAndSendEvent" classname="MessageBusTest" time="0.014">
+    <system-out><![CDATA[Event TestEvent sent to Service1
+Awaiting message for MicroService Service1
+TearDown: Cleared internal data structures of MessageBus.
+TearDown: Cleaned up all resources after test.
+]]></system-out>
+  </testcase>
+  <testcase name="testRoundRobinEventDispatch" classname="MessageBusTest" time="0.002">
+    <system-out><![CDATA[Event TestEvent sent to Service1
+Event TestEvent sent to Service2
+Awaiting message for MicroService Service1
+Awaiting message for MicroService Service2
+TearDown: Cleared internal data structures of MessageBus.
+TearDown: Cleaned up all resources after test.
+]]></system-out>
+  </testcase>
+  <testcase name="testAwaitMessageBlocksUntilMessageIsAvailable" classname="MessageBusTest" time="0.203">
+    <system-out><![CDATA[MicroService Service1 subscribed to broadcast TestBroadcast
+Main Thread: Calling awaitMessage...
+Awaiting message for MicroService Service1
+Thread: Starting delay...
+Thread: Sending broadcast...
+Broadcast TestBroadcast sent to Service1
+Main Thread: Verifying results...
+Main Thread: Test completed successfully.
+TearDown: Cleared internal data structures of MessageBus.
+TearDown: Cleaned up all resources after test.
+]]></system-out>
+  </testcase>
+  <testcase name="testSubscribeBroadcastAndSendBroadcast" classname="MessageBusTest" time="0.003">
+    <system-out><![CDATA[MicroService Service1 subscribed to broadcast TestBroadcast
+MicroService Service2 subscribed to broadcast TestBroadcast
+Broadcast TestBroadcast sent to Service1
+Broadcast TestBroadcast sent to Service2
+Awaiting message for MicroService Service1
+Awaiting message for MicroService Service2
+TearDown: Cleared internal data structures of MessageBus.
+TearDown: Cleaned up all resources after test.
+]]></system-out>
+  </testcase>
+  <testcase name="testAwaitMessageThrowsExceptionForUnregisteredMicroService" classname="MessageBusTest" time="0.002">
+    <system-out><![CDATA[TearDown: Cleared internal data structures of MessageBus.
+TearDown: Cleaned up all resources after test.
+]]></system-out>
+  </testcase>
 </testsuite>
