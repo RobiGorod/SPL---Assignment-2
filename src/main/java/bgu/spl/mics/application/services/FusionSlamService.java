@@ -33,9 +33,10 @@ import bgu.spl.mics.application.objects.LandMark;
 public class FusionSlamService extends MicroService {
 
     private final FusionSlam fusionSlam;
+    private static FusionSlamService instance; 
     private final StatisticalFolder statisticalFolder;
     private final AtomicInteger activeSensors;
-     private final CountDownLatch initializationLatch;
+    private final CountDownLatch initializationLatch;
     private String errorDescription = null;
     private String faultySensor = null;
     private final Map<String, Object> lastFrames = new HashMap<>();
@@ -50,6 +51,7 @@ public class FusionSlamService extends MicroService {
         this.statisticalFolder = statisticalFolder;
         this.activeSensors = new AtomicInteger(activeSensors);
         this.initializationLatch = initializationLatch;
+        instance = this;
     }
 
     /**
@@ -62,6 +64,7 @@ public class FusionSlamService extends MicroService {
         try{
             // Subscribe to TerminatedBroadcast
             subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
+<<<<<<< Updated upstream
                 if(terminatedBroadcast.getSender() == "Time Service"){
                     outputFinalState();
                     terminate();
@@ -73,8 +76,17 @@ public class FusionSlamService extends MicroService {
                         outputFinalState();
                         terminate();
                     }
+=======
+                System.out.println(getName() + " received TerminatedBroadcast.");
+                int remainingSensors = activeSensors.decrementAndGet();
+                System.out.println("Current state of active sensors: " + remainingSensors);
+                // Thread.currentThread().join();
+                // if (remainingSensors == 0) {
+                outputFinalState();
+                terminate();
+>>>>>>> Stashed changes
                     
-                }
+                // }
             });
 
             // Subscribe to CrashedBroadcast
@@ -133,12 +145,38 @@ public class FusionSlamService extends MicroService {
 
      // Outputs the final state of the system to a JSON file.
     private void outputFinalState() {
+        System.out.println("Writing final state to JSON...");
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        try (FileWriter writer = new FileWriter("output_file.json")) {
+        try (FileWriter writer = new FileWriter("./example input/output_file.json")) {
+            System.out.println("Output file parameters check");
+            System.out.println("Statistics: " + statisticalFolder);
+            System.out.println("Landmarks: " + fusionSlam.getLandmarks());
+            System.out.println("Error: " + errorDescription);
+            System.out.println("Faulty Sensor: " + faultySensor);
+            System.out.println("Last Frames: " + lastFrames);
+            System.out.println("Poses: " + fusionSlam.getPoses());
             gson.toJson(new FinalState(statisticalFolder, fusionSlam.getLandmarks(), errorDescription, faultySensor, lastFrames, fusionSlam.getPoses()), writer);
         } catch (IOException e) {
             System.err.println("Error writing output file: " + e.getMessage());
         }
+    }
+
+    // public static void registerSendorToFS(MicroService m) {
+    //     if (instance != null) {
+
+    //         int remaining = instance.activeSensors.decrementAndGet();
+    //         System.out.println("Active sensors remaining: " + remaining);
+    //     }
+    // }
+    public static void decrementActiveSensors() {
+        if (instance != null) {
+            int remaining = instance.activeSensors.decrementAndGet();
+            System.out.println("Active sensors remaining: " + remaining);
+        }
+    }
+
+    public static int getActiveSensorsCount() {
+        return instance != null ? instance.activeSensors.get() : 0;
     }
 
     }
@@ -160,6 +198,7 @@ class FinalState {
         this.lastFrames = lastFrames;
         this.poses = poses;
     }
-   }
+}
+
 
 
