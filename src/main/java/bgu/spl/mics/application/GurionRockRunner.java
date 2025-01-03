@@ -134,7 +134,7 @@ public class GurionRockRunner {
 
             // Initialize Fusion Slam (Singleton)
             FusionSlam fusionSlam = FusionSlam.getInstance();
-            services.add(new FusionSlamService(fusionSlam, statisticalFolder, initializationLatch, cameras.size() + lidarWorkers.size()));
+            services.add(new FusionSlamService(fusionSlam, statisticalFolder, initializationLatch, cameras.size() + lidarWorkers.size())); //
 
             
             // Get the "poseJsonFile" field and resolve its absolute path
@@ -159,13 +159,16 @@ public class GurionRockRunner {
             int duration = config.get("Duration").getAsInt();
             TimeService timeService = new TimeService(tickTime, duration, statisticalFolder);
             Thread timeServiceThread = new Thread(timeService);
+            timeServiceThread.setName("Time service thread");
+            System.out.println("Thread "+ timeServiceThread.getName() + " was started");
             timeServiceThread.start();
+
 
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Failed to initialize simulation. Error: " + e.getMessage());
         }
-    System.out.println(Thread.currentThread().getName() + " was terminted");
+        System.out.println(Thread.currentThread().getName() + " was terminted <-------------");
 
     }
     public static List<StampedDetectedObjects> fromCameraJsonToDetectedObjects(String filePath, String cameraKey) {
