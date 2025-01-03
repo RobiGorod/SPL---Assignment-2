@@ -55,6 +55,8 @@ public class LiDarService extends MicroService {
     @Override
     protected void initialize() {
         try{
+            System.out.println("Initializing "+Thread.currentThread().getName()+"...");
+
             // Subscribe to TickBroadcast
             subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
                 currentTick = tickBroadcast.getCurrentTick();
@@ -131,6 +133,7 @@ public class LiDarService extends MicroService {
                         LiDarWorkerTracker.getLastTrackedObjects().addAll(trackedObjects);
 
                         // Send a TrackedObjectsEvent to Fusion-SLAM
+                        System.out.println("LiDarService is sending TrackedObjectsEvent...");
                         sendEvent(new TrackedObjectsEvent(trackedObjects));
 
                         // Respond to Camera with True result

@@ -87,7 +87,7 @@ public class GurionRockRunner {
                 Camera camera = new Camera(
                         cameraJson.get("id").getAsInt(),
                         cameraJson.get("frequency").getAsInt(),
-                        STATUS.DOWN,
+                        STATUS.UP,
                         fromCameraJsonToDetectedObjects(cameraDataPath,cameraJson.get("camera_key").getAsString())
                       
                 );
@@ -169,7 +169,7 @@ public class GurionRockRunner {
             e.printStackTrace();
             System.err.println("Failed to initialize simulation. Error: " + e.getMessage());
         }
-        System.out.println(Thread.currentThread().getName() + " was terminted <-------------");
+        // System.out.println(Thread.currentThread().getName() + " was terminted <-------------");
 
     }
     public static List<StampedDetectedObjects> fromCameraJsonToDetectedObjects(String filePath, String cameraKey) {

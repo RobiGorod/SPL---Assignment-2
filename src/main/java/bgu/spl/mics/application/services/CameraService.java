@@ -46,6 +46,8 @@ public class CameraService extends MicroService {
     @Override
     protected void initialize() {
         try{
+            System.out.println("Initializing "+Thread.currentThread().getName()+"...");
+
             // Subscribe to TickBroadcast
             subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
                 int currentTick = tickBroadcast.getCurrentTick();
@@ -84,7 +86,7 @@ public class CameraService extends MicroService {
     public void processDetectedObjects(int currentTick) {
 
         // Set the Camera status to UP during processing
-        camera.setStatus(STATUS.UP);
+        // camera.setStatus(STATUS.UP);
 
         // Get the list of stamped detected objects
         List<StampedDetectedObjects> detectedObjectsList = camera.getDetectedObjectsList();
@@ -105,6 +107,7 @@ public class CameraService extends MicroService {
                 
             if (isDetectionTimeValid(stampedObjects, currentTick)) {
                 // Create and send DetectObjectsEvent
+                System.out.println("CameraService is sending DetectObjectsEvent...");
                 sendEvent(new DetectObjectsEvent(stampedObjects, currentTick));
 
                 // Update the statistics
