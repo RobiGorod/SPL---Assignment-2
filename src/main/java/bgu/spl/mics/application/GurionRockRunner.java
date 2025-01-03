@@ -163,6 +163,7 @@ public class GurionRockRunner {
             timeServiceThread.setName("Time service thread");
             System.out.println("Thread "+ timeServiceThread.getName() + " was started");
             timeServiceThread.start();
+        
 
 
         } catch (Exception e) {

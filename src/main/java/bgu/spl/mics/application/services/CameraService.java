@@ -119,8 +119,13 @@ public class CameraService extends MicroService {
 
     // Checks if a detection is valid for the current tick based on the camera frequency
     private boolean isDetectionTimeValid(StampedDetectedObjects stampedObjects, int currentTick) {
-        return ((stampedObjects.getTime() <= currentTick) & (camera.getFrequency()!=0) &&
-               ((currentTick - stampedObjects.getTime()) % camera.getFrequency() == 0));
+        if (camera.getFrequency() == 0) {
+            // If frequency is 0, consider detection valid for all ticks
+            return stampedObjects.getTime() <= currentTick;
+        }
+        // Otherwise, use the original logic
+        return (stampedObjects.getTime() <= currentTick) &&
+               ((currentTick - stampedObjects.getTime()) % camera.getFrequency() == 0);
     }
 
 
