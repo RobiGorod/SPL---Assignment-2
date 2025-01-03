@@ -5,6 +5,7 @@ import java.util.concurrent.CountDownLatch;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
 import bgu.spl.mics.application.messages.PoseEvent;
+import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.GPSIMU;
 import bgu.spl.mics.application.objects.Pose;
@@ -48,6 +49,12 @@ public class PoseService extends MicroService {
 
                 // Send a PoseEvent with the current pose
                 sendEvent(new PoseEvent(currentPose));
+            });
+
+            // Subscribe to TerminatedBroadcast
+            subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
+                gpsimu.setStatus(STATUS.DOWN);
+                terminate();
             });
 
             // Subscribe to CrashedBroadcast

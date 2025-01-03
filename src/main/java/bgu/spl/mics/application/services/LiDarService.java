@@ -63,8 +63,10 @@ public class LiDarService extends MicroService {
 
             // Subscribe to TerminatedBroadcast
             subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
-                LiDarWorkerTracker.setStatus(STATUS.DOWN); 
-                terminate();
+                if(terminatedBroadcast.getSender() == "Time Service"){
+                    LiDarWorkerTracker.setStatus(STATUS.DOWN); 
+                    terminate();
+                }
             });
 
             // Subscribe to CrashedBroadcast
@@ -98,6 +100,7 @@ public class LiDarService extends MicroService {
                                     "LiDAR sensor disconnected",
                                     "LiDarWorkerTracker"
                                 ));
+                                sendBroadcast(new TerminatedBroadcast("Lidar"));
                                 terminate();
                                 return;
                             }

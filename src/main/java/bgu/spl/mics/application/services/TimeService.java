@@ -41,7 +41,7 @@ public class TimeService extends MicroService {
 
                     Thread.sleep(TickTime); // Wait for the next tick
                 }
-                sendBroadcast(new TerminatedBroadcast()); // Send a TerminatedBroadcast
+                sendBroadcast(new TerminatedBroadcast("Time Service")); // Send a TerminatedBroadcast
                 terminate(); // Terminate this service
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
