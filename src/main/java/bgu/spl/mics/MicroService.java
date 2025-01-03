@@ -172,12 +172,15 @@ public abstract class MicroService implements Runnable {
                         callback.call(message); // Execute the callback for the received message
                     }
                 }
+
             } catch (InterruptedException e) {
+                System.out.println("Thread " + Thread.currentThread().getName() + " was interrupted");
                 Thread.currentThread().interrupt(); // Restore interrupted status
             }
         }
-
+        System.out.println(Thread.currentThread().getName() + " was terminated");
         messageBus.unregister(this); // Unregister the microservice upon termination
+        Thread.currentThread().interrupt(); // Restore interrupted status
         
     }
 }
