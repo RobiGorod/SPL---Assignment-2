@@ -26,13 +26,13 @@ public class CameraTest  {
         // Initialize CountDownLatch with a count of 1 for the service under test
         CountDownLatch initializationLatch = new CountDownLatch(1);
         // Initialize StatisticalFolder with zeroed values
-        TeststatisticalFolder = new StatisticalFolder(0, 0, 0, 0);
+        TeststatisticalFolder = StatisticalFolder.getInstance();
         
         // Initialize Camera with an empty list of detected objects
         Testcamera = new Camera(1, 2, STATUS.DOWN, Collections.emptyList());
         
         // Initialize CameraService with the above objects
-        TestcameraService = new CameraService(Testcamera, TeststatisticalFolder, initializationLatch, "Canera1");
+        TestcameraService = new CameraService(Testcamera, initializationLatch, "Canera1");
     }
 
     @Test

@@ -2,7 +2,7 @@ package bgu.spl.mics.application;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
+// import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -11,7 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
+// import com.google.gson.JsonSyntaxException;
 
 import bgu.spl.mics.MessageBus;
 import bgu.spl.mics.MessageBusImpl;
@@ -48,6 +48,7 @@ public class GurionRockRunner {
      *
      * @param args Command-line arguments. The first argument is expected to be the path to the configuration file.
      */
+     @SuppressWarnings("unused") //It is created only to the singletones
     public static void main(String[] args) {
         
         String configPath = args[0];
@@ -60,7 +61,7 @@ public class GurionRockRunner {
             MessageBus messageBus = MessageBusImpl.getInstance();
 
             // Initialize Statistical Folder
-            StatisticalFolder statisticalFolder = new StatisticalFolder(0,0,0,0);
+            StatisticalFolder statisticalFolder = StatisticalFolder.getInstance() ;
 
             // Parse configuration file
             JsonObject config = JsonParser.parseReader(new FileReader(configPath)).getAsJsonObject();
@@ -123,18 +124,18 @@ public class GurionRockRunner {
 
             // Add Camera Services
             cameras.forEach(camera -> {
-                services.add(new CameraService(camera, statisticalFolder, initializationLatch, "camera" + camera.getId()));
+                services.add(new CameraService(camera, initializationLatch, "camera" + camera.getId()));
             });
 
             // Add LiDAR Services
             lidarWorkers.forEach(worker -> {
-                services.add(new LiDarService(worker, statisticalFolder, liDarDataBase, initializationLatch));
+                services.add(new LiDarService(worker, liDarDataBase, initializationLatch));
             });
 
 
             // Initialize Fusion Slam (Singleton)
             FusionSlam fusionSlam = FusionSlam.getInstance();
-            services.add(new FusionSlamService(fusionSlam, statisticalFolder, initializationLatch, cameras.size() + lidarWorkers.size())); //
+            services.add(new FusionSlamService(fusionSlam, initializationLatch, cameras.size() + lidarWorkers.size())); //
 
             
             // Get the "poseJsonFile" field and resolve its absolute path
@@ -157,7 +158,7 @@ public class GurionRockRunner {
             // Start the TimeService after all services are ready
             int tickTime = config.get("TickTime").getAsInt();
             int duration = config.get("Duration").getAsInt();
-            TimeService timeService = new TimeService(tickTime, duration, statisticalFolder);
+            TimeService timeService = new TimeService(tickTime, duration);
             Thread timeServiceThread = new Thread(timeService);
             timeServiceThread.setName("Time service thread");
             System.out.println("Thread "+ timeServiceThread.getName() + " was started");

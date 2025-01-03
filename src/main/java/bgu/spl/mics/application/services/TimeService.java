@@ -3,6 +3,7 @@ package bgu.spl.mics.application.services;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
+import bgu.spl.mics.application.objects.FusionSlam;
 import bgu.spl.mics.application.objects.StatisticalFolder;
 
 /**
@@ -13,7 +14,7 @@ public class TimeService extends MicroService {
 
     private final int TickTime; // Duration of each tick in milliseconds
     private final int Duration; // Total number of ticks before termination
-    private final StatisticalFolder statisticalFolder;
+    // private final StatisticalFolder statisticalFolder;
 
     /**
      * Constructor for TimeService.
@@ -21,11 +22,11 @@ public class TimeService extends MicroService {
      * @param TickTime  The duration of each tick in milliseconds.
      * @param Duration  The total number of ticks before the service terminates.
      */
-    public TimeService(int TickTime, int Duration, StatisticalFolder statisticalFolder) {
+    public TimeService(int TickTime, int Duration) {
         super("TimeService");
         this.TickTime = TickTime * 1000;  // Convertion to milliseconds
         this.Duration = Duration;
-        this.statisticalFolder = statisticalFolder;
+        // this.statisticalFolder = statisticalFolder;
     }
 
     /**
@@ -34,20 +35,23 @@ public class TimeService extends MicroService {
      */
     @Override
     protected void initialize() {
+        int currentTick = 0;
+        while (currentTick < Duration && FusionSlam.getInstance().isWorking()) {
+            sendBroadcast(new TickBroadcast(currentTick)); // Send a TickBroadcast
+            System.out.println("Tick broadcast was sent, tick number: " + currentTick);
+            StatisticalFolder.getInstance().incrementSystemRuntime(1); // Update runtime
             try {
-                for (int currentTick = 1; currentTick <= Duration; currentTick++) {
-                    statisticalFolder.incrementSystemRuntime(1); // Update runtime
-                    sendBroadcast(new TickBroadcast(currentTick)); // Send a TickBroadcast
-                    System.out.println("Tick broadcast was send. Tick number: " + currentTick);
-                    Thread.sleep(TickTime); // Wait for the next tick
-                    
-                }
-                sendBroadcast(new TerminatedBroadcast("Time Service")); // Send a TerminatedBroadcast
-                terminate(); // Terminate this service
-            } catch (InterruptedException e) {
+                Thread.sleep(TickTime); // Wait for the next tick
+            
+            } catch (InterruptedException e)
+            {
                 Thread.currentThread().interrupt();
                 System.err.println(getName() + " was interrupted.");
+                break;
             }
-
+            currentTick++;
+        }
+                sendBroadcast(new TerminatedBroadcast("Time Service")); // Send a TerminatedBroadcast
+                terminate(); // Terminate this service
     }
 }

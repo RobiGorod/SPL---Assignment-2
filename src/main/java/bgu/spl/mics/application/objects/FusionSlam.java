@@ -17,11 +17,14 @@ public class FusionSlam {
     // Fields
     private final List<LandMark> landmarks; // Represents the map of the environment
     private final List<Pose> poses;        // Represents previous poses needed for calculations
+    private boolean working;
 
     
     private FusionSlam() {
         this.landmarks = new ArrayList<>();
         this.poses = new ArrayList<>();
+        this.working = true;
+
     }
 
    
@@ -29,6 +32,14 @@ public class FusionSlam {
   
     public static FusionSlam getInstance() {
         return FusionSlamHolder.instance;
+    }
+
+    public boolean isWorking(){
+        return working;
+    }
+
+    public void terminateFusionSlam(){
+        working = false;
     }
 
    // Retrieves the list of landmarks in the environment map.

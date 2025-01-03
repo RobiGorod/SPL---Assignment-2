@@ -11,11 +11,13 @@ import java.util.Map;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+// import bgu.spl.mics.MessageBus;
+// import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
 import bgu.spl.mics.application.messages.PoseEvent;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
-import bgu.spl.mics.application.messages.TickBroadcast;
+// import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrackedObjectsEvent;
 import bgu.spl.mics.application.objects.FusionSlam;
 import bgu.spl.mics.application.objects.Pose;
@@ -31,10 +33,10 @@ import bgu.spl.mics.application.objects.LandMark;
  * transforming and updating the map with new landmarks.
  */
 public class FusionSlamService extends MicroService {
-
+    
     private final FusionSlam fusionSlam;
     private static FusionSlamService instance; 
-    private final StatisticalFolder statisticalFolder;
+    // private final StatisticalFolder statisticalFolder;
     private final AtomicInteger activeSensors;
     private final CountDownLatch initializationLatch;
     private String errorDescription = null;
@@ -45,14 +47,16 @@ public class FusionSlamService extends MicroService {
      *
      * @param fusionSlam The FusionSLAM object responsible for managing the global map.
      */
-    public FusionSlamService(FusionSlam fusionSlam, StatisticalFolder statisticalFolder,  CountDownLatch initializationLatch, int activeSensors) {
+    public FusionSlamService(FusionSlam fusionSlam,  CountDownLatch initializationLatch, int activeSensors) {
         super("FusionSlamService");
         this.fusionSlam = fusionSlam;
-        this.statisticalFolder = statisticalFolder;
+        // this.statisticalFolder = statisticalFolder;
         this.activeSensors = new AtomicInteger(activeSensors);
         this.initializationLatch = initializationLatch;
         instance = this;
     }
+
+    
 
     /**
      * Initializes the FusionSlamService.
@@ -64,6 +68,7 @@ public class FusionSlamService extends MicroService {
         try{
             // Subscribe to TerminatedBroadcast
             subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
+// <<<<<<< Updated upstream
                 if(terminatedBroadcast.getSender() == "Time Service"){
                     outputFinalState();
                     terminate();
@@ -72,11 +77,21 @@ public class FusionSlamService extends MicroService {
                     int remainingSensors = activeSensors.decrementAndGet();
                     System.out.println("Current state of active sensors: " + remainingSensors);
                     if (remainingSensors == 0) {
+                        FusionSlam.getInstance().terminateFusionSlam();
                         outputFinalState();
                         terminate();
                     }
+// =======
+//                 System.out.println(getName() + " received TerminatedBroadcast.");
+//                 int remainingSensors = activeSensors.decrementAndGet();
+//                 System.out.println("Current state of active sensors: " + remainingSensors);
+//                 // Thread.currentThread().join();
+//                 // if (remainingSensors == 0) {
+//                 outputFinalState();
+//                 terminate();
+// >>>>>>> Stashed changes
+                    
                 }
- 
             });
 
             // Subscribe to CrashedBroadcast
@@ -87,6 +102,7 @@ public class FusionSlamService extends MicroService {
                 // Capture last frames from sensors
                 lastFrames.put("cameras", CrashedBroadcast.getLastCameraFrames());
                 lastFrames.put("LiDarWorkers", CrashedBroadcast.getLastLiDarFrames());
+                FusionSlam.getInstance().terminateFusionSlam();
                 outputFinalState();
                 terminate(); // Terminate the service due to a crash
             });
@@ -107,7 +123,7 @@ public class FusionSlamService extends MicroService {
                         // Update the map in FusionSLAM
                         if (fusionSlam.isNewLandmark(trackedObject)) {
                             fusionSlam.addLandmark(trackedObject);
-                            statisticalFolder.incrementLandmarks(1); // Track new landmarks
+                            StatisticalFolder.getInstance().incrementLandmarks(1); // Track new landmarks
                         } else {
                             fusionSlam.updateLandmark(trackedObject);
                         }
@@ -138,14 +154,14 @@ public class FusionSlamService extends MicroService {
         System.out.println("Writing final state to JSON...");
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         try (FileWriter writer = new FileWriter("./example input/output_file.json")) {
-            System.out.println("Output file parameters check");
-            System.out.println("Statistics: " + statisticalFolder);
+            System.out.println("---------------Output file parameters check---------------");
+            System.out.println("Statistics: " + StatisticalFolder.getInstance().getNumDetectedObjects()+StatisticalFolder.getInstance().getNumLandmarks()+StatisticalFolder.getInstance().getNumTrackedObjects());
             System.out.println("Landmarks: " + fusionSlam.getLandmarks());
             System.out.println("Error: " + errorDescription);
             System.out.println("Faulty Sensor: " + faultySensor);
             System.out.println("Last Frames: " + lastFrames);
             System.out.println("Poses: " + fusionSlam.getPoses());
-            gson.toJson(new FinalState(statisticalFolder, fusionSlam.getLandmarks(), errorDescription, faultySensor, lastFrames, fusionSlam.getPoses()), writer);
+            gson.toJson(new FinalState( fusionSlam.getLandmarks(), errorDescription, faultySensor, lastFrames, fusionSlam.getPoses()), writer);
         } catch (IOException e) {
             System.err.println("Error writing output file: " + e.getMessage());
         }
@@ -173,15 +189,15 @@ public class FusionSlamService extends MicroService {
 
 // A helper class representing the final state of the system for JSON output.
 class FinalState {
-    private final StatisticalFolder statistics;
+    // private final StatisticalFolder statistics;
     private final List<LandMark> landmarks;
     private final String error;
     private final String faultySensor;
     private final Map<String, Object> lastFrames;
     private final List<Pose> poses;
 
-    public FinalState(StatisticalFolder statistics, List<LandMark> landmarks, String error, String faultySensor, Map<String, Object> lastFrames, List<Pose> poses) {
-        this.statistics = statistics;
+    public FinalState( List<LandMark> landmarks, String error, String faultySensor, Map<String, Object> lastFrames, List<Pose> poses) {
+        // this.statistics = statistics;
         this.landmarks = landmarks;
         this.error = error;
         this.faultySensor = faultySensor;

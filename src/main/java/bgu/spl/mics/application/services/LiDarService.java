@@ -29,7 +29,7 @@ import bgu.spl.mics.application.objects.DetectedObject;
 public class LiDarService extends MicroService {
 
     private final LiDarWorkerTracker LiDarWorkerTracker;
-    private final StatisticalFolder statisticalFolder;
+    // private final StatisticalFolder statisticalFolder;
     private final LiDarDataBase liDarDataBase;
     private final CountDownLatch initializationLatch; 
     private int currentTick = 0;
@@ -39,10 +39,10 @@ public class LiDarService extends MicroService {
      *
      * @param LiDarWorkerTracker A LiDAR Tracker worker object that this service will use to process data.
      */
-    public LiDarService(LiDarWorkerTracker LiDarWorkerTracker, StatisticalFolder statisticalFolder,  LiDarDataBase liDarDataBase, CountDownLatch initializationLatch) {
+    public LiDarService(LiDarWorkerTracker LiDarWorkerTracker,  LiDarDataBase liDarDataBase, CountDownLatch initializationLatch) {
         super("LiDarWorkerService_" + LiDarWorkerTracker.getId());
         this.LiDarWorkerTracker = LiDarWorkerTracker;
-        this.statisticalFolder = statisticalFolder;
+        // this.statisticalFolder = statisticalFolder;
         this.liDarDataBase = LiDarDataBase.getInstance();
         this.initializationLatch = initializationLatch;
     }
@@ -137,7 +137,7 @@ public class LiDarService extends MicroService {
                         complete(detectObjectsEvent, true);
 
                         // Update statistical folder
-                        statisticalFolder.incrementTrackedObjects(trackedObjects.size());
+                        StatisticalFolder.getInstance().incrementTrackedObjects(trackedObjects.size());
                     }
                 
                 } catch (Exception e) {

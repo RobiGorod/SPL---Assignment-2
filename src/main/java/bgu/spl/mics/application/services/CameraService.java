@@ -24,7 +24,6 @@ import bgu.spl.mics.application.objects.StatisticalFolder;;
 public class CameraService extends MicroService {
 
     private final Camera camera;
-    private final StatisticalFolder statisticalFolder;
     private final CountDownLatch initializationLatch;
 
     /**
@@ -32,10 +31,10 @@ public class CameraService extends MicroService {
      *
      * @param camera The Camera object that this service will use to detect objects.
      */
-    public CameraService(Camera camera, StatisticalFolder statisticalFolder, CountDownLatch initializationLatch, String name) {
+    public CameraService(Camera camera , CountDownLatch initializationLatch, String name) {
         super(name);
         this.camera = camera;
-        this.statisticalFolder = statisticalFolder;
+        // this.statisticalFolder = statisticalFolder;
         this.initializationLatch = initializationLatch;
     }
 
@@ -50,7 +49,6 @@ public class CameraService extends MicroService {
             // Subscribe to TickBroadcast
             subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
                 int currentTick = tickBroadcast.getCurrentTick();
-
                 // Process detected objects
                 processDetectedObjects(currentTick);
             });
@@ -110,7 +108,7 @@ public class CameraService extends MicroService {
                 sendEvent(new DetectObjectsEvent(stampedObjects, currentTick));
 
                 // Update the statistics
-                statisticalFolder.incrementDetectedObjects(stampedObjects.getDetectedObjects().size());
+                StatisticalFolder.getInstance().incrementDetectedObjects(stampedObjects.getDetectedObjects().size());
             }
         }
     }

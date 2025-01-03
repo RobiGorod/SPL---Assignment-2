@@ -2,9 +2,6 @@ package bgu.spl.mics;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import bgu.spl.mics.application.messages.TerminatedBroadcast;
-
 /**
  * The MicroService is an abstract class that any micro-service in the system
  * must extend. The abstract MicroService class is responsible to get and
@@ -166,7 +163,7 @@ public abstract class MicroService implements Runnable {
             try {
                 Message message = messageBus.awaitMessage(this); // Block until a message is available
                 if (message != null) {
-                    @SuppressWarnings("unchecked")
+                    // @SuppressWarnings("unchecked")
                     Callback<Message> callback = (Callback<Message>) callbacks.get(message.getClass());
                     if (callback != null) {
                         callback.call(message); // Execute the callback for the received message
@@ -174,11 +171,12 @@ public abstract class MicroService implements Runnable {
                 }
 
             } catch (InterruptedException e) {
-                System.out.println("Thread " + Thread.currentThread().getName() + " was interrupted");
+                System.out.println(Thread.currentThread().getName()+" interrupted");
                 Thread.currentThread().interrupt(); // Restore interrupted status
             }
+            
         }
-        System.out.println(Thread.currentThread().getName() + " was terminated");
+        System.out.println(Thread.currentThread().getName()+" terminated");
         messageBus.unregister(this); // Unregister the microservice upon termination
         Thread.currentThread().interrupt(); // Restore interrupted status
         

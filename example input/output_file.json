@@ -1,13 +1,8 @@
 {
-  "statistics": {
-    "systemRuntime": 30,
-    "numDetectedObjects": 0,
-    "numTrackedObjects": 0,
-    "numLandmarks": 0
-  },
   "landmarks": [],
   "lastFrames": {},
   "poses": [
+    null,
     {
       "x": 0.0,
       "y": 0.0,
@@ -128,7 +123,6 @@
       "yaw": 206.26,
       "Time": 20
     },
-    null,
     null,
     null,
     null,

@@ -12,7 +12,18 @@ public class StatisticalFolder {
     private final AtomicInteger numDetectedObjects;
     private final AtomicInteger numTrackedObjects;
     private final AtomicInteger numLandmarks;
-        public StatisticalFolder(int systemRuntime, int numDetectedObjects, int numTrackedObjects, int numLandmarks) {
+
+
+    private static class StatisticalFolderHolder{
+        // Singleton instance holder
+        private static StatisticalFolder instance = new StatisticalFolder(0,0,0,0);
+        }
+        
+    public static StatisticalFolder getInstance() {
+        return StatisticalFolderHolder.instance;
+        }
+    
+        private StatisticalFolder(int systemRuntime, int numDetectedObjects, int numTrackedObjects, int numLandmarks) {
             this.systemRuntime =  new AtomicInteger(systemRuntime);
             this.numDetectedObjects =  new AtomicInteger(numDetectedObjects);
             this.numTrackedObjects =  new AtomicInteger(numTrackedObjects);
