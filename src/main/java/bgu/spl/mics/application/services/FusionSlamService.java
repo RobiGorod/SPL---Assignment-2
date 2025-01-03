@@ -64,7 +64,6 @@ public class FusionSlamService extends MicroService {
         try{
             // Subscribe to TerminatedBroadcast
             subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
-<<<<<<< Updated upstream
                 if(terminatedBroadcast.getSender() == "Time Service"){
                     outputFinalState();
                     terminate();
@@ -76,17 +75,8 @@ public class FusionSlamService extends MicroService {
                         outputFinalState();
                         terminate();
                     }
-=======
-                System.out.println(getName() + " received TerminatedBroadcast.");
-                int remainingSensors = activeSensors.decrementAndGet();
-                System.out.println("Current state of active sensors: " + remainingSensors);
-                // Thread.currentThread().join();
-                // if (remainingSensors == 0) {
-                outputFinalState();
-                terminate();
->>>>>>> Stashed changes
-                    
-                // }
+                }
+ 
             });
 
             // Subscribe to CrashedBroadcast
