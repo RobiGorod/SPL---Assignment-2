@@ -58,7 +58,7 @@ public class LiDarService extends MicroService {
             // Subscribe to TickBroadcast
             subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
                 currentTick = tickBroadcast.getCurrentTick();
-
+                
             });
 
             // Subscribe to TerminatedBroadcast

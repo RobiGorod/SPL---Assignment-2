@@ -62,11 +62,12 @@ public class FusionSlamService extends MicroService {
         try{
             // Subscribe to TerminatedBroadcast
             subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
+                System.out.println(getName() + " received TerminatedBroadcast.");
                 int remainingSensors = activeSensors.decrementAndGet();
                 System.out.println("Current state of active sensors: " + remainingSensors);
                 if (remainingSensors == 0) {
-                    outputFinalState();
-                    terminate();
+                outputFinalState();
+                terminate();
                     
                 }
             });

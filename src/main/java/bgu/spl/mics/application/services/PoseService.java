@@ -5,6 +5,7 @@ import java.util.concurrent.CountDownLatch;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
 import bgu.spl.mics.application.messages.PoseEvent;
+import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.GPSIMU;
 import bgu.spl.mics.application.objects.Pose;
@@ -55,6 +56,13 @@ public class PoseService extends MicroService {
                 gpsimu.setStatus(STATUS.ERROR);
                 terminate(); // Terminate the service due to a crash
             });
+
+               // Subscribe to TerminatedBroadcast
+            subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
+            System.out.println(getName() + " received TerminatedBroadcast.");
+            terminate(); // Terminate the service
+            });
+
         } finally {
             initializationLatch.countDown(); // Signal that initialization is complete
         }
