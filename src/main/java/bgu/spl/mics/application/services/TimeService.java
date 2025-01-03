@@ -38,8 +38,9 @@ public class TimeService extends MicroService {
                 for (int currentTick = 1; currentTick <= Duration; currentTick++) {
                     statisticalFolder.incrementSystemRuntime(1); // Update runtime
                     sendBroadcast(new TickBroadcast(currentTick)); // Send a TickBroadcast
-
+                    System.out.println("Tick broadcast was send. Tick number: " + currentTick);
                     Thread.sleep(TickTime); // Wait for the next tick
+                    
                 }
                 sendBroadcast(new TerminatedBroadcast("Time Service")); // Send a TerminatedBroadcast
                 terminate(); // Terminate this service

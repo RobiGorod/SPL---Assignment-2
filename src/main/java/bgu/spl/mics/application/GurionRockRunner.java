@@ -52,6 +52,9 @@ public class GurionRockRunner {
         
         String configPath = args[0];
         CountDownLatch initializationLatch;
+        //Main thread
+        Thread.currentThread().setName("Main Thread");
+        System.out.println(Thread.currentThread().getName() + " was started <-----------------");
         try {
             // Initialize MessageBus 
             MessageBus messageBus = MessageBusImpl.getInstance();
@@ -138,10 +141,14 @@ public class GurionRockRunner {
             String poseDataPath = new File(baseDir, config.get("poseJsonFile").getAsString()).getAbsolutePath();
             services.add(new PoseService(new GPSIMU(0, STATUS.UP, fromPoseJsonToPosesList(poseDataPath)), initializationLatch));
 
+
+
             // Start the Services
             services.forEach(service -> {
                 Thread serviceThread = new Thread(service);
+                serviceThread.setName(service.getName() + " Thread");
                 serviceThread.start();
+                System.out.println("Thread "+ serviceThread.getName() + " was started");
             });
 
             // Wait for all services to initialize
@@ -158,7 +165,8 @@ public class GurionRockRunner {
             e.printStackTrace();
             System.err.println("Failed to initialize simulation. Error: " + e.getMessage());
         }
-    
+    System.out.println(Thread.currentThread().getName() + " was terminted");
+
     }
     public static List<StampedDetectedObjects> fromCameraJsonToDetectedObjects(String filePath, String cameraKey) {
 

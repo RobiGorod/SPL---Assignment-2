@@ -62,6 +62,13 @@ public class PoseService extends MicroService {
                 gpsimu.setStatus(STATUS.ERROR);
                 terminate(); // Terminate the service due to a crash
             });
+
+               // Subscribe to TerminatedBroadcast
+            subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
+            System.out.println(getName() + " received TerminatedBroadcast.");
+            terminate(); // Terminate the service
+            });
+
         } finally {
             initializationLatch.countDown(); // Signal that initialization is complete
         }
