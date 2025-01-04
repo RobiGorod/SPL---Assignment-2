@@ -54,8 +54,16 @@ public class CameraService extends MicroService {
             // Subscribe to TickBroadcast
             subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
                 int currentTick = tickBroadcast.getCurrentTick();
+                if(needsToDetect == 0){
+                    sendBroadcast(new TerminatedBroadcast("Camera"));
+                    camera.setStatus(STATUS.DOWN);
+                    terminate();
+                }
+                else{
                 // Process detected objects
                 processDetectedObjects(currentTick);
+                }
+            
             });
 
             // Subscribe to TerminatedBroadcast
@@ -116,11 +124,7 @@ public class CameraService extends MicroService {
                 // Update the statistics
                 StatisticalFolder.getInstance().incrementDetectedObjects(stampedObjects.getDetectedObjects().size());
             }
-            if(needsToDetect == 0){
-                sendBroadcast(new TerminatedBroadcast("Camera"));
-                camera.setStatus(STATUS.DOWN);
-                terminate();
-            }
+            
         }   
     } 
 }

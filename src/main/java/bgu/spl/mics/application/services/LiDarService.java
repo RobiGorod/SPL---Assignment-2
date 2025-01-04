@@ -148,6 +148,7 @@ public class LiDarService extends MicroService {
             // Retrieve cloud points for the object
             List<StampedCloudPoints> matchingPoints = liDarDataBase.getCloudPoints().stream()
                     .filter(point -> point.getId().equals(detectedObject.getId()))
+                    .filter(point -> point.getTime() == e.getTime()) // Ensure the timestamp is valid
                     .collect(Collectors.toList());
          
 
