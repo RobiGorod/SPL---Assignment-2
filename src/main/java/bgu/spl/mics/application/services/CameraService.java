@@ -122,7 +122,5 @@ public class CameraService extends MicroService {
                 terminate();
             }
         }   
-    } //צריך לכתוב else 
-    
-
+    } 
 }

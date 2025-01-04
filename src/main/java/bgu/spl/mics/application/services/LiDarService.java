@@ -115,51 +115,49 @@ public class LiDarService extends MicroService {
                             List<StampedCloudPoints> matchingPoints = liDarDataBase.getCloudPoints().stream()
                                     .filter(point -> point.getId().equals(detectedObject.getId()))
                                     .collect(Collectors.toList());
-                        
 
-                            // Create a TrackedObject for each matching cloud point
-                            for (StampedCloudPoints stampedPoint : matchingPoints) {
-                                // Convert List<List<Double>> to List<CloudPoint>
-                                List<CloudPoint> cloudPoints = stampedPoint.getCloudPoints().stream()
-                                    .map(coord -> new CloudPoint(coord.get(0).intValue(), coord.get(1).intValue())) // Assuming CloudPoint(x, y)
-                                .collect(Collectors.toList());
+                        // Create a TrackedObject for each matching cloud point
+                        for (StampedCloudPoints stampedPoint : matchingPoints) {
+                            List<CloudPoint> cloudPoints = stampedPoint.getCloudPoints().stream()
+                            .map(coord -> new CloudPoint(coord.get(0).intValue(), coord.get(1).intValue()))
+                            .collect(Collectors.toList());
 
-                                trackedObjects.add(new TrackedObject(
-                                    detectedObject.getId(),
-                                    stampedPoint.getTime(),
-                                    detectedObject.getDescription(),
-                                    cloudPoints
-                                ));
+                            trackedObjects.add(new TrackedObject(
+                            detectedObject.getId(),
+                            stampedPoint.getTime(),
+                            detectedObject.getDescription(),
+                            cloudPoints));
                             }
-                        }
-
-                        // Update worker's last tracked objects
-                        LiDarWorkerTracker.getLastTrackedObjects().clear();
-                        LiDarWorkerTracker.getLastTrackedObjects().addAll(trackedObjects);
-
-                        // Send a TrackedObjectsEvent to Fusion-SLAM
-                        System.out.println("LiDarService is sending TrackedObjectsEvent...");
-                        sendEvent(new TrackedObjectsEvent(trackedObjects));
 
 
-                        // Update statistical folder
-                        StatisticalFolder.getInstance().incrementTrackedObjects(trackedObjects.size());
+                            // Update worker's last tracked objects
+                            LiDarWorkerTracker.getLastTrackedObjects().clear();
+                            LiDarWorkerTracker.getLastTrackedObjects().addAll(trackedObjects);
+
+                            // Send a TrackedObjectsEvent to Fusion-SLAM
+                            System.out.println("LiDarService is sending TrackedObjectsEvent...");
+                            sendEvent(new TrackedObjectsEvent(trackedObjects));
+
+
+                            // Update statistical folder
+                            StatisticalFolder.getInstance().incrementTrackedObjects(trackedObjects.size());
                    
 
-                        // Respond to Camera with True result
-                        complete(detectObjectsEvent, true);
+                            // Respond to Camera with True result
+                            complete(detectObjectsEvent, true);
+                            break;
                     }
-                
-                } catch (Exception e) {
-                    LiDarWorkerTracker.setStatus(STATUS.ERROR);
-                    sendBroadcast(new CrashedBroadcast(
-                        "LiDAR sensor disconnected",
-                        "LiDarWorkerTracker"
-                    ));
-                    terminate();
-                    complete(detectObjectsEvent, false); // Respond with failure to the Camera
                 }
-            });
+                
+            } catch (Exception e) {
+                LiDarWorkerTracker.setStatus(STATUS.ERROR);
+                sendBroadcast(new CrashedBroadcast(
+                "LiDAR sensor disconnected",
+                "LiDarWorkerTracker"));
+                terminate();
+                complete(detectObjectsEvent, false); // Respond with failure to the Camera
+            }
+        });
         } finally {
             initializationLatch.countDown(); // Signal that initialization is complete
         }
