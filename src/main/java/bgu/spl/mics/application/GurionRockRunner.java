@@ -26,6 +26,7 @@ import bgu.spl.mics.application.objects.Pose;
 import bgu.spl.mics.application.objects.STATUS;
 import bgu.spl.mics.application.objects.StampedDetectedObjects;
 import bgu.spl.mics.application.objects.StatisticalFolder;
+import bgu.spl.mics.application.objects.cameraCount;
 import bgu.spl.mics.application.services.CameraService;
 import bgu.spl.mics.application.services.FusionSlamService;
 import bgu.spl.mics.application.services.LiDarService;
@@ -94,6 +95,9 @@ public class GurionRockRunner {
                 
                 cameras.add(camera);
             });
+
+            // Initializing cameraCount
+            cameraCount.getInstance().setCameraCount(cameras.size());
 
             // Access the "LiDarWorkers" object
             JsonObject lidarWorkersObject = config.getAsJsonObject("LiDarWorkers");

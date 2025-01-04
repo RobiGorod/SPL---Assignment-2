@@ -3,6 +3,7 @@ package bgu.spl.mics.application.services;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
@@ -16,6 +17,7 @@ import bgu.spl.mics.application.objects.STATUS;
 import bgu.spl.mics.application.objects.StampedCloudPoints;
 import bgu.spl.mics.application.objects.StatisticalFolder;
 import bgu.spl.mics.application.objects.TrackedObject;
+import bgu.spl.mics.application.objects.cameraCount;
 import bgu.spl.mics.application.objects.CloudPoint;
 import bgu.spl.mics.application.objects.DetectedObject;
 /**
@@ -89,11 +91,19 @@ public class LiDarService extends MicroService {
                         }
                     }
                 }
+                if(eventsInHold.size() <= 0 && cameraCount.getInstance().getCameraCount() <= 0){
+                    sendBroadcast(new TerminatedBroadcast("Lidar"));
+                    LiDarWorkerTracker.setStatus(STATUS.DOWN); 
+                    terminate();
+                }
                 
             });
 
             // Subscribe to TerminatedBroadcast
             subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
+                if(terminatedBroadcast.getSender() == "Camera"){
+                    cameraCount.getInstance().decrementCameraCount();
+                }
                 if(terminatedBroadcast.getSender() == "Time Service"){
                     LiDarWorkerTracker.setStatus(STATUS.DOWN); 
                     terminate();
@@ -185,4 +195,6 @@ public class LiDarService extends MicroService {
         complete(e, true);
      
     }
+
+    
 }

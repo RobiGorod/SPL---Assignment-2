@@ -156,6 +156,7 @@ public class FusionSlamService extends MicroService {
         try (FileWriter writer = new FileWriter("./example input/output_file.json")) {
             System.out.println("---------------Output file parameters check---------------");
             System.out.println("Statistics: Num Detected-" + StatisticalFolder.getInstance().getNumDetectedObjects()+" Num landmarks- "+ StatisticalFolder.getInstance().getNumLandmarks()+" Num tracked: "+StatisticalFolder.getInstance().getNumTrackedObjects());
+            System.out.println("run time " + StatisticalFolder.getInstance().getSystemRuntime());
             System.out.println("Landmarks: " + fusionSlam.getLandmarks());
             System.out.println("Error: " + errorDescription);
             System.out.println("Faulty Sensor: " + faultySensor);
@@ -167,13 +168,6 @@ public class FusionSlamService extends MicroService {
         }
     }
 
-    // public static void registerSendorToFS(MicroService m) {
-    //     if (instance != null) {
-
-    //         int remaining = instance.activeSensors.decrementAndGet();
-    //         System.out.println("Active sensors remaining: " + remaining);
-    //     }
-    // }
     public static void decrementActiveSensors() {
         if (instance != null) {
             int remaining = instance.activeSensors.decrementAndGet();
@@ -189,7 +183,7 @@ public class FusionSlamService extends MicroService {
 
 // A helper class representing the final state of the system for JSON output.
 class FinalState {
-    // private final StatisticalFolder statistics;
+    private final StatisticalFolder statistics;
     private final List<LandMark> landmarks;
     private final String error;
     private final String faultySensor;
@@ -197,7 +191,7 @@ class FinalState {
     private final List<Pose> poses;
 
     public FinalState( List<LandMark> landmarks, String error, String faultySensor, Map<String, Object> lastFrames, List<Pose> poses) {
-        // this.statistics = statistics;
+        this.statistics = StatisticalFolder.getInstance();
         this.landmarks = landmarks;
         this.error = error;
         this.faultySensor = faultySensor;
