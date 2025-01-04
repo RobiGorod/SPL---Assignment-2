@@ -155,7 +155,7 @@ public class FusionSlamService extends MicroService {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         try (FileWriter writer = new FileWriter("./example input/output_file.json")) {
             System.out.println("---------------Output file parameters check---------------");
-            System.out.println("Statistics: " + StatisticalFolder.getInstance().getNumDetectedObjects()+StatisticalFolder.getInstance().getNumLandmarks()+StatisticalFolder.getInstance().getNumTrackedObjects());
+            System.out.println("Statistics: Num Detected-" + StatisticalFolder.getInstance().getNumDetectedObjects()+" Num landmarks- "+ StatisticalFolder.getInstance().getNumLandmarks()+" Num tracked: "+StatisticalFolder.getInstance().getNumTrackedObjects());
             System.out.println("Landmarks: " + fusionSlam.getLandmarks());
             System.out.println("Error: " + errorDescription);
             System.out.println("Faulty Sensor: " + faultySensor);

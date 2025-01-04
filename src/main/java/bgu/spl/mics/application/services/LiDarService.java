@@ -136,11 +136,13 @@ public class LiDarService extends MicroService {
                         System.out.println("LiDarService is sending TrackedObjectsEvent...");
                         sendEvent(new TrackedObjectsEvent(trackedObjects));
 
-                        // Respond to Camera with True result
-                        complete(detectObjectsEvent, true);
 
                         // Update statistical folder
                         StatisticalFolder.getInstance().incrementTrackedObjects(trackedObjects.size());
+                   
+
+                        // Respond to Camera with True result
+                        complete(detectObjectsEvent, true);
                     }
                 
                 } catch (Exception e) {

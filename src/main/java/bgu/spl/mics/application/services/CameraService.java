@@ -90,30 +90,36 @@ public class CameraService extends MicroService {
 
         // Get the list of stamped detected objects
         List<StampedDetectedObjects> detectedObjectsList = camera.getDetectedObjectsList();
-
+        StampedDetectedObjects currentTickDetectedObjects = null;
         for (StampedDetectedObjects stampedObjects : detectedObjectsList) {
-            // Check if the camera is in error state
-            for(DetectedObject object: stampedObjects.getDetectedObjects()){
-                if (object.getId() == "ERROR") {
-                    sendBroadcast(new CrashedBroadcast(
-                        object.getDescription(),
-                        "Cameras"
-                ));
-                sendBroadcast(new TerminatedBroadcast("Camera"));
-                terminate();
-                return;
-                }
-            }
-                
-            if (isDetectionTimeValid(stampedObjects, currentTick)) {
-                // Create and send DetectObjectsEvent
-                System.out.println("CameraService is sending DetectObjectsEvent...");
-                sendEvent(new DetectObjectsEvent(stampedObjects, currentTick));
-
-                // Update the statistics
-                StatisticalFolder.getInstance().incrementDetectedObjects(stampedObjects.getDetectedObjects().size());
+            if(stampedObjects.getTime()==currentTick){
+                currentTickDetectedObjects = stampedObjects;
             }
         }
+            // Check if the camera is in error state
+        if (currentTickDetectedObjects!= null){
+        for(DetectedObject object: currentTickDetectedObjects.getDetectedObjects()){
+            if (object.getId().equals("ERROR")) {
+                sendBroadcast(new CrashedBroadcast(
+                    object.getDescription(),
+                    "Cameras"));
+            
+            sendBroadcast(new TerminatedBroadcast("Camera"));
+            terminate();
+            return;
+            }
+            
+                
+            if (isDetectionTimeValid(currentTickDetectedObjects, currentTick)) {
+                // Create and send DetectObjectsEvent
+                System.out.println("CameraService is sending DetectObjectsEvent...");
+                sendEvent(new DetectObjectsEvent(currentTickDetectedObjects, currentTick));
+
+                // Update the statistics
+                StatisticalFolder.getInstance().incrementDetectedObjects(currentTickDetectedObjects.getDetectedObjects().size());
+            }
+        }   
+    } //צריך לכתוב else 
     }
 
 
