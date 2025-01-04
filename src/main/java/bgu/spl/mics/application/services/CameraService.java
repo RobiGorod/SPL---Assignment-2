@@ -85,54 +85,35 @@ public class CameraService extends MicroService {
     //Robi changed from private to public to use in Camera Test
     public void processDetectedObjects(int currentTick) {
 
-        // Set the Camera status to UP during processing
-        // camera.setStatus(STATUS.UP);
-
         // Get the list of stamped detected objects
         List<StampedDetectedObjects> detectedObjectsList = camera.getDetectedObjectsList();
-        StampedDetectedObjects currentTickDetectedObjects = null;
         for (StampedDetectedObjects stampedObjects : detectedObjectsList) {
             if(stampedObjects.getTime()==currentTick){
-                currentTickDetectedObjects = stampedObjects;
-            }
-        }
-            // Check if the camera is in error state
-        if (currentTickDetectedObjects!= null){
-        for(DetectedObject object: currentTickDetectedObjects.getDetectedObjects()){
-            if (object.getId().equals("ERROR")) {
-                sendBroadcast(new CrashedBroadcast(
-                    object.getDescription(),
-                    "Cameras"));
-            
-            sendBroadcast(new TerminatedBroadcast("Camera"));
-            terminate();
-            return;
-            }
-            
+                for(DetectedObject object: stampedObjects.getDetectedObjects()){
+                    if (object.getId().equals("ERROR")) {
+                        sendBroadcast(new CrashedBroadcast(
+                            object.getDescription(),
+                            "Cameras"));
                 
-            if (isDetectionTimeValid(currentTickDetectedObjects, currentTick)) {
+                    terminate();
+                    return;
+                    }
+                }
+            }
+            int  detectionTime = currentTick - camera.getFrequency();   
+            if (stampedObjects.getTime() > detectionTime) {
+                break;
+            }
+            else if(stampedObjects.getTime() == detectionTime && stampedObjects.getDetectedObjects() != null){
                 // Create and send DetectObjectsEvent
                 System.out.println("CameraService is sending DetectObjectsEvent...");
-                sendEvent(new DetectObjectsEvent(currentTickDetectedObjects, currentTick));
+                sendEvent(new DetectObjectsEvent(stampedObjects, currentTick));
 
                 // Update the statistics
-                StatisticalFolder.getInstance().incrementDetectedObjects(currentTickDetectedObjects.getDetectedObjects().size());
+                StatisticalFolder.getInstance().incrementDetectedObjects(stampedObjects.getDetectedObjects().size());
             }
         }   
     } //צריך לכתוב else 
-    }
-
-
-    // Checks if a detection is valid for the current tick based on the camera frequency
-    private boolean isDetectionTimeValid(StampedDetectedObjects stampedObjects, int currentTick) {
-        if (camera.getFrequency() == 0) {
-            // If frequency is 0, consider detection valid for all ticks
-            return stampedObjects.getTime() <= currentTick;
-        }
-        // Otherwise, use the original logic
-        return (stampedObjects.getTime() <= currentTick) &&
-               ((currentTick - stampedObjects.getTime()) % camera.getFrequency() == 0);
-    }
-
+    
 
 }
