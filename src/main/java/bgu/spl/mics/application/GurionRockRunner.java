@@ -113,7 +113,7 @@ public class GurionRockRunner {
                 LiDarWorkerTracker worker = new LiDarWorkerTracker(
                         lidarJson.get("id").getAsInt(),
                         lidarJson.get("frequency").getAsInt(),
-                        STATUS.DOWN,
+                        STATUS.UP,
                         new ArrayList<>()
                 );
                 lidarWorkers.add(worker);

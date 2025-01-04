@@ -25,6 +25,7 @@ public class CameraService extends MicroService {
 
     private final Camera camera;
     private final CountDownLatch initializationLatch;
+    private int needsToDetect;
 
     /**
      * Constructor for CameraService.
@@ -36,6 +37,8 @@ public class CameraService extends MicroService {
         this.camera = camera;
         // this.statisticalFolder = statisticalFolder;
         this.initializationLatch = initializationLatch;
+        this.needsToDetect = camera.getDetectedObjectsList().size();
+
     }
 
     /**
@@ -94,7 +97,7 @@ public class CameraService extends MicroService {
                         sendBroadcast(new CrashedBroadcast(
                             object.getDescription(),
                             "Cameras"));
-                
+                    camera.setStatus(STATUS.ERROR);
                     terminate();
                     return;
                     }
@@ -107,10 +110,16 @@ public class CameraService extends MicroService {
             else if(stampedObjects.getTime() == detectionTime && stampedObjects.getDetectedObjects() != null){
                 // Create and send DetectObjectsEvent
                 System.out.println("CameraService is sending DetectObjectsEvent...");
-                sendEvent(new DetectObjectsEvent(stampedObjects, currentTick));
+                sendEvent(new DetectObjectsEvent(stampedObjects, detectionTime));
+                needsToDetect--; 
 
                 // Update the statistics
                 StatisticalFolder.getInstance().incrementDetectedObjects(stampedObjects.getDetectedObjects().size());
+            }
+            if(needsToDetect == 0){
+                sendBroadcast(new TerminatedBroadcast("Camera"));
+                camera.setStatus(STATUS.DOWN);
+                terminate();
             }
         }   
     } //צריך לכתוב else 
