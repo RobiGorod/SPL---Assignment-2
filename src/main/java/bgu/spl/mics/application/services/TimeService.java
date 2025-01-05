@@ -39,7 +39,6 @@ public class TimeService extends MicroService {
         while (currentTick < Duration && FusionSlam.getInstance().isWorking()) {
             sendBroadcast(new TickBroadcast(currentTick)); // Send a TickBroadcast
             System.out.println("Tick broadcast was sent, tick number: " + currentTick);
-            StatisticalFolder.getInstance().incrementSystemRuntime(1); // Update runtime
             try {
                 Thread.sleep(TickTime); // Wait for the next tick
             
@@ -50,6 +49,7 @@ public class TimeService extends MicroService {
                 break;
             }
             currentTick++;
+            StatisticalFolder.getInstance().incrementSystemRuntime(1); // Update runtime
         }
                 sendBroadcast(new TerminatedBroadcast("Time Service")); // Send a TerminatedBroadcast
                 terminate(); // Terminate this service

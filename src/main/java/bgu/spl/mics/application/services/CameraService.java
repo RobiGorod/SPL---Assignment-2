@@ -12,7 +12,8 @@ import bgu.spl.mics.application.objects.Camera;
 import bgu.spl.mics.application.objects.DetectedObject;
 import bgu.spl.mics.application.objects.STATUS;
 import bgu.spl.mics.application.objects.StampedDetectedObjects;
-import bgu.spl.mics.application.objects.StatisticalFolder;;
+import bgu.spl.mics.application.objects.StatisticalFolder;
+import bgu.spl.mics.application.objects.cameraCount;;
 
 /**
  * CameraService is responsible for processing data from the camera and
@@ -102,12 +103,10 @@ public class CameraService extends MicroService {
             if(stampedObjects.getTime()==currentTick){
                 for(DetectedObject object: stampedObjects.getDetectedObjects()){
                     if (object.getId().equals("ERROR")) {
-                        sendBroadcast(new CrashedBroadcast(
-                            object.getDescription(),
-                            "Cameras"));
-                    camera.setStatus(STATUS.ERROR);
-                    terminate();
-                    return;
+                        sendBroadcast(new CrashedBroadcast(object.getDescription(), "Cameras"));
+                        camera.setStatus(STATUS.ERROR);
+                        terminate();
+                        return;
                     }
                 }
             }

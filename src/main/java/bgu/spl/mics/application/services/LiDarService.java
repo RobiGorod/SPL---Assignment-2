@@ -17,6 +17,7 @@ import bgu.spl.mics.application.objects.STATUS;
 import bgu.spl.mics.application.objects.StampedCloudPoints;
 import bgu.spl.mics.application.objects.StatisticalFolder;
 import bgu.spl.mics.application.objects.TrackedObject;
+import bgu.spl.mics.application.objects.cameraCount;
 import bgu.spl.mics.application.objects.CloudPoint;
 import bgu.spl.mics.application.objects.DetectedObject;
 /**
@@ -93,11 +94,19 @@ public class LiDarService extends MicroService {
                         }
                     }
                 }
+                if(eventsInHold.size() <= 0 && cameraCount.getInstance().getCameraCount() <= 0){
+                    sendBroadcast(new TerminatedBroadcast("Lidar"));
+                    LiDarWorkerTracker.setStatus(STATUS.DOWN); 
+                    terminate();
+                }
                 
             });
 
             // Subscribe to TerminatedBroadcast
             subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
+                if(terminatedBroadcast.getSender() == "Camera"){
+                    cameraCount.getInstance().decrementCameraCount();
+                }
                 if(terminatedBroadcast.getSender() == "Time Service"){
                     LiDarWorkerTracker.setStatus(STATUS.DOWN); 
                     terminate();
@@ -189,18 +198,6 @@ public class LiDarService extends MicroService {
         complete(e, true);
      
     }
-    public class activeCameras{
-        AtomicInteger camerasCount;
-        private static class activeCamerasHolder
-        {
-            private static activeCameras instance = new activeCameras(0);
-        }
 
-        private activeCameras (int camerasCount)
-        { this.camerasCount = new AtomicInteger(camerasCount);}
-
-        public static getInstance(){
-            return activeCamerasHolder.instance;
-        }
-    }
+    
 }
