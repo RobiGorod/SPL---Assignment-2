@@ -133,7 +133,8 @@ public class GurionRockRunner {
 
             // Add LiDAR Services
             lidarWorkers.forEach(worker -> {
-                services.add(new LiDarService(worker, liDarDataBase, initializationLatch));
+                MicroService LiDarService = new LiDarService(worker, initializationLatch);
+                services.add(LiDarService);
             });
 
 

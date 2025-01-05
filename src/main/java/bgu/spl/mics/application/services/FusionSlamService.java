@@ -3,6 +3,7 @@ package bgu.spl.mics.application.services;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.HashMap;
@@ -43,7 +44,7 @@ public class FusionSlamService extends MicroService {
     private final CountDownLatch initializationLatch;
     private String errorDescription = null;
     private String faultySensor = null;
-    private final Map<String, Object> lastFrames = new HashMap<>();
+    private final Map<String, Object> lastFrames = new ConcurrentHashMap<>();
     private final String configPath;
     /**
      * Constructor for FusionSlamService.
@@ -89,16 +90,23 @@ public class FusionSlamService extends MicroService {
 
             // Subscribe to CrashedBroadcast
             subscribeBroadcast(CrashedBroadcast.class, crashedBroadcast -> {
-                errorDescription = crashedBroadcast.getErrorDescription();
-                faultySensor = crashedBroadcast.getFaultySensor();
-
-                // Capture last frames from sensors
-                lastFrames.put("cameras", CrashedBroadcast.getLastCameraFrames());
-                lastFrames.put("LiDarWorkers", CrashedBroadcast.getLastLiDarFrames());
-                FusionSlam.getInstance().terminateFusionSlam();
-                outputFinalState();
-                terminate(); // Terminate the service due to a crash
-            });
+                
+                // fusionSlam.terminateFusionSlam();
+                // if(crashedBroadcast.getSender() == "Camera" || crashedBroadcast.getSender() == "Lidar"){
+                    int remainingSensors = activeSensors.decrementAndGet();
+                
+                    // if (remainingSensors == 0){  
+                    errorDescription = crashedBroadcast.getErrorDescription();
+                    faultySensor = crashedBroadcast.getFaultySensor();
+                    // Capture last frames from sensors
+                    lastFrames.put("cameras", CrashedBroadcast.getLastCameraFrames());
+                    lastFrames.put("LiDarWorkers", CrashedBroadcast.getLastLiDarFrames());
+                    FusionSlam.getInstance().terminateFusionSlam();
+                    outputFinalState();
+                    terminate(); // Terminate the service due to a crash
+                    }
+                // }
+            );
 
             // Subscribe to TrackedObjectsEvent
             subscribeEvent(TrackedObjectsEvent.class, trackedObjectsEvent -> {
@@ -172,8 +180,8 @@ public class FusionSlamService extends MicroService {
                     Map<String, Object> errorOutput = new LinkedHashMap<>();
                     errorOutput.put("error", errorDescription);
                     errorOutput.put("faultySensor", faultySensor);
-                    errorOutput.put("lastCamerasFrame", lastFrames.get("cameras"));
-                    errorOutput.put("lastLiDarWorkerTrackersFrame", lastFrames.get("LiDarWorkers"));
+                    errorOutput.put("lastCamerasFrame", CrashedBroadcast.getLastCameraFrames());
+                    errorOutput.put("lastLiDarWorkerTrackersFrame", CrashedBroadcast.getLastLiDarFrames());
                     errorOutput.put("poses", fusionSlam.getPoses());
                     
                     Map<String, Object> statistics = createStatisticsMap();

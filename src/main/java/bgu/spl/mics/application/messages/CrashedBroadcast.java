@@ -1,18 +1,23 @@
 package bgu.spl.mics.application.messages;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import bgu.spl.mics.Broadcast;
+import bgu.spl.mics.application.objects.StampedDetectedObjects;
+import bgu.spl.mics.application.objects.TrackedObject;
 
 public class CrashedBroadcast implements Broadcast{
     private final String errorDescription;
     private final String faultySensor;
-    private static final Map<Integer, Object> lastCameraFrames = new ConcurrentHashMap<>();
-    private static final Map<Integer, Object> lastLiDarFrames = new ConcurrentHashMap<>();
+    private final String sender;
+    private static final Map<String, StampedDetectedObjects> lastCameraFrames = new ConcurrentHashMap<>();
+    private static final Map<String, List<TrackedObject>> lastLiDarFrames = new ConcurrentHashMap<>();
 
-    public CrashedBroadcast(String errorDescription, String faultySensor) {
+    public CrashedBroadcast(String errorDescription, String faultySensor, String sender) {
         this.errorDescription = errorDescription;
         this.faultySensor = faultySensor;
+        this.sender = sender;
     }
 
     public String getErrorDescription() {
@@ -23,19 +28,24 @@ public class CrashedBroadcast implements Broadcast{
         return faultySensor;
     }
 
-    public static Map<Integer, Object> getLastCameraFrames() {
+    public String getSender(){
+        return sender;
+    }
+
+    public static Map<String, StampedDetectedObjects> getLastCameraFrames() {
         return lastCameraFrames;
     }
 
-    public static Map<Integer, Object> getLastLiDarFrames() {
+    public static Map<String, List<TrackedObject>> getLastLiDarFrames() {
         return lastLiDarFrames;
     }
 
-    public static void updateLastCameraFrames(int cameraId, Object frameData) {
+    public static void updateLastCameraFrames(String cameraId, StampedDetectedObjects frameData) {
         lastCameraFrames.put(cameraId, frameData);
+
     }
 
-    public static void updateLastLiDarFrames(int lidarId, Object frameData) {
+    public static void updateLastLiDarFrames(String lidarId, List<TrackedObject> frameData) {
         lastLiDarFrames.put(lidarId, frameData);
     }
 
