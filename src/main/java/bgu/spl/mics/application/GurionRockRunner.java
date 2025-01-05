@@ -139,7 +139,7 @@ public class GurionRockRunner {
 
             // Initialize Fusion Slam (Singleton)
             FusionSlam fusionSlam = FusionSlam.getInstance();
-            services.add(new FusionSlamService(fusionSlam, initializationLatch, cameras.size() + lidarWorkers.size())); //
+            services.add(new FusionSlamService(fusionSlam, initializationLatch, cameras.size() + lidarWorkers.size(), configPath)); 
 
             
             // Get the "poseJsonFile" field and resolve its absolute path

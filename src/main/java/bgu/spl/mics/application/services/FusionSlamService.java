@@ -1,5 +1,6 @@
 package bgu.spl.mics.application.services;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -34,26 +35,25 @@ import bgu.spl.mics.application.objects.LandMark;
  */
 public class FusionSlamService extends MicroService {
     
-    private final FusionSlam fusionSlam;
-    private static FusionSlamService instance; 
-    // private final StatisticalFolder statisticalFolder;
+    private final FusionSlam fusionSlam; 
     private final AtomicInteger activeSensors;
     private final CountDownLatch initializationLatch;
     private String errorDescription = null;
     private String faultySensor = null;
     private final Map<String, Object> lastFrames = new HashMap<>();
+    private final String configPath;
     /**
      * Constructor for FusionSlamService.
      *
      * @param fusionSlam The FusionSLAM object responsible for managing the global map.
      */
-    public FusionSlamService(FusionSlam fusionSlam,  CountDownLatch initializationLatch, int activeSensors) {
+    public FusionSlamService(FusionSlam fusionSlam,  CountDownLatch initializationLatch, int activeSensors, String configPath) {
         super("FusionSlamService");
         this.fusionSlam = fusionSlam;
-        // this.statisticalFolder = statisticalFolder;
         this.activeSensors = new AtomicInteger(activeSensors);
         this.initializationLatch = initializationLatch;
-        instance = this;
+        this.configPath = configPath;
+
     }
 
     
@@ -68,7 +68,6 @@ public class FusionSlamService extends MicroService {
         try{
             // Subscribe to TerminatedBroadcast
             subscribeBroadcast(TerminatedBroadcast.class, terminatedBroadcast -> {
-// <<<<<<< Updated upstream
                 if(terminatedBroadcast.getSender() == "Time Service"){
                     outputFinalState();
                     terminate();
@@ -81,15 +80,6 @@ public class FusionSlamService extends MicroService {
                         outputFinalState();
                         terminate();
                     }
-// =======
-//                 System.out.println(getName() + " received TerminatedBroadcast.");
-//                 int remainingSensors = activeSensors.decrementAndGet();
-//                 System.out.println("Current state of active sensors: " + remainingSensors);
-//                 // Thread.currentThread().join();
-//                 // if (remainingSensors == 0) {
-//                 outputFinalState();
-//                 terminate();
-// >>>>>>> Stashed changes
                     
                 }
             });
@@ -149,37 +139,72 @@ public class FusionSlamService extends MicroService {
         }
     }
 
-     // Outputs the final state of the system to a JSON file.
+
+    // Outputs the final state of the system to a JSON file.
     private void outputFinalState() {
         System.out.println("Writing final state to JSON...");
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        try (FileWriter writer = new FileWriter("./example input/output_file.json")) {
-            System.out.println("---------------Output file parameters check---------------");
-            System.out.println("Statistics: Num Detected-" + StatisticalFolder.getInstance().getNumDetectedObjects()+" Num landmarks- "+ StatisticalFolder.getInstance().getNumLandmarks()+" Num tracked: "+StatisticalFolder.getInstance().getNumTrackedObjects());
-            System.out.println("run time " + StatisticalFolder.getInstance().getSystemRuntime());
-            System.out.println("Landmarks: " + fusionSlam.getLandmarks());
-            System.out.println("Error: " + errorDescription);
-            System.out.println("Faulty Sensor: " + faultySensor);
-            System.out.println("Last Frames: " + lastFrames);
-            System.out.println("Poses: " + fusionSlam.getPoses());
-            gson.toJson(new FinalState( fusionSlam.getLandmarks(), errorDescription, faultySensor, lastFrames, fusionSlam.getPoses()), writer);
+        try{
+            // Determine the directory of the configuration file
+            File configFile = new File(configPath);
+            String configDir = configFile.getParent(); // Get the parent directory of the configuration file
+            
+            // Construct the output file path
+            File outputFile = new File(configDir, "output_file.json");
+            try (FileWriter writer = new FileWriter(outputFile)) {
+                System.out.println("---------------Output file parameters check---------------");
+                System.out.println("Statistics: Num Detected-" + StatisticalFolder.getInstance().getNumDetectedObjects() +
+                                " Num landmarks- " + StatisticalFolder.getInstance().getNumLandmarks() +
+                                " Num tracked: " + StatisticalFolder.getInstance().getNumTrackedObjects());
+                System.out.println("run time " + StatisticalFolder.getInstance().getSystemRuntime());
+        
+                if (errorDescription != null && faultySensor != null) {
+                    // Error case
+                    System.out.println("Error: " + errorDescription);
+                    System.out.println("Faulty Sensor: " + faultySensor);
+                    System.out.println("Last Frames: " + lastFrames);
+                    System.out.println("Poses: " + fusionSlam.getPoses());
+
+                    // Create the statistics map
+                    Map<String, Object> statistics = new HashMap<>();
+                    statistics.put("systemRuntime", StatisticalFolder.getInstance().getSystemRuntime());
+                    statistics.put("numDetectedObjects", StatisticalFolder.getInstance().getNumDetectedObjects());
+                    statistics.put("numTrackedObjects", StatisticalFolder.getInstance().getNumTrackedObjects());
+                    statistics.put("numLandmarks", StatisticalFolder.getInstance().getNumLandmarks());
+                    statistics.put("landMarks", fusionSlam.getLandmarks());
+        
+                    // Create the error-specific JSON structure
+                    Map<String, Object> errorOutput = new HashMap<>();
+                    errorOutput.put("error", errorDescription);
+                    errorOutput.put("faultySensor", faultySensor);
+                    errorOutput.put("lastCamerasFrame", lastFrames.get("cameras"));
+                    errorOutput.put("lastLiDarWorkerTrackersFrame", lastFrames.get("LiDarWorkers"));
+                    errorOutput.put("poses", fusionSlam.getPoses());
+                    errorOutput.put("statistics", statistics);
+        
+                    gson.toJson(errorOutput, writer);
+        
+                } else {
+                    // Successful run
+                    System.out.println("Landmarks: " + fusionSlam.getLandmarks());
+        
+                    // Create a success-specific JSON structure
+                    Map<String, Object> successOutput = new HashMap<>();
+                    successOutput.put("systemRuntime", StatisticalFolder.getInstance().getSystemRuntime());
+                    successOutput.put("numDetectedObjects", StatisticalFolder.getInstance().getNumDetectedObjects());
+                    successOutput.put("numTrackedObjects", StatisticalFolder.getInstance().getNumTrackedObjects());
+                    successOutput.put("numLandmarks", StatisticalFolder.getInstance().getNumLandmarks());
+                    successOutput.put("landMarks", fusionSlam.getLandmarks());
+        
+                    gson.toJson(successOutput, writer);
+                }
+            }
         } catch (IOException e) {
             System.err.println("Error writing output file: " + e.getMessage());
         }
     }
 
-    public static void decrementActiveSensors() {
-        if (instance != null) {
-            int remaining = instance.activeSensors.decrementAndGet();
-            System.out.println("Active sensors remaining: " + remaining);
-        }
-    }
-
-    public static int getActiveSensorsCount() {
-        return instance != null ? instance.activeSensors.get() : 0;
-    }
-
-    }
+}
 
 // A helper class representing the final state of the system for JSON output.
 class FinalState {
