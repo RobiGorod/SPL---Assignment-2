@@ -65,5 +65,12 @@ public class StatisticalFolder {
         public void incrementLandmarks(int increment) {
             numLandmarks.addAndGet(increment);
         }
+
+        public void reset(){
+             systemRuntime.set(0);
+             numDetectedObjects.set(0);
+             numTrackedObjects.set(0);
+             numLandmarks.set(0);
+        }
     
 }
