@@ -144,6 +144,7 @@ public class MessageBusTest {
                 "Unregistered microService1 should throw an exception when awaiting messages.");
     }
 
+    
     @Test
     public void testRoundRobinEventDispatch() {
         // Register microservices

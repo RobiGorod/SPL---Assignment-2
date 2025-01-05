@@ -67,6 +67,17 @@ public void updatePose(Pose newPose) {
     poses.add(newPose);
 }
 
+
+/**
+ * @pre landmark.getId() != null |  - Landmarks must have valid IDs before being added.
+ * @pre landmark.getCoordinates() != null - Landmarks must have valid coordinates.
+ * @pre pose.getTime() > 0 - Pose updates must have a valid timestamp.
+ *
+ * @post fusionSlam.hasLandmark(landmarkId) == true - After adding, the landmark must exist in the system.
+ * @post fusionSlam.isPoseUpdated(timestamp) == true - After updating, the pose must be updated at the given timestamp.
+ *
+ * @inv fusionSlam.getLandmarks().stream().map(Landmark::getId).distinct().count() == fusionSlam.getLandmarks().size() - All landmarks must have unique IDs.
+ */
 public void transformCoordinatesToGlobal(TrackedObject trackedObject, Pose pose) {
     // Transform each cloud point in the tracked object to the global coordinate system
     double yawRadians = Math.toRadians(pose.getYaw());
@@ -85,6 +96,14 @@ public boolean isNewLandmark(TrackedObject trackedObject) {
 public void addLandmark(TrackedObject trackedObject) {
     LandMark newLandmark = new LandMark(trackedObject.getId(), trackedObject.getDescription(), new ArrayList<>(trackedObject.getCoordinates()));
     landmarks.add(newLandmark);
+}
+
+public boolean hasLandmark(String landmarkId) {
+    if (landmarkId == null || landmarkId.isEmpty()) {
+        throw new IllegalArgumentException("Landmark ID cannot be null or empty");
+    }
+    return landmarks.stream()
+            .anyMatch(landmark -> landmark.getId().equals(landmarkId));
 }
 
 public void updateLandmark(TrackedObject trackedObject) {

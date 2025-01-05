@@ -48,7 +48,11 @@ public class MessageBusImpl implements MessageBus {
        return messageBusHolder.instance;
     }
 
-	
+	/*
+	 * pre: type,m != null
+	 * post: (messageBus.microServiceQueues.get(microService)  != null
+	 * inv: if eventSubscribers.get(type) = null -> eventSubscribers.add(type, new ArrayList<>()), else eventSubscribers.get(type).add(m); 
+	 */
 	@Override
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
         eventSubscribers.putIfAbsent(type, new LinkedList<>());
@@ -57,6 +61,11 @@ public class MessageBusImpl implements MessageBus {
 		}
     }
 
+	/*
+	 * pre: type,m != null
+	 * post: (messageBus.microServiceQueues.get(microService)  != null
+	 * inv: if broadcastSubscribers.get(type) = null -> broadcastSubscribers.add(type, new ArrayList<>()), else broadcastSubscribers.get(type).add(m); 
+	 */
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m) {
 		 broadcastSubscribers.putIfAbsent(type, new ArrayList<>());
@@ -78,6 +87,11 @@ public class MessageBusImpl implements MessageBus {
 		 }
 	 }
 
+	 /*
+	* @pre b!=null
+ 	* @post microServiceQueues
+	* @inv none
+	*/
 	@Override
 	public void sendBroadcast(Broadcast b) {
 		 List<MicroService> subscribers;
@@ -96,9 +110,13 @@ public class MessageBusImpl implements MessageBus {
         	}
 		}
     }
-
-
 	
+
+	/*
+	* @pre e!=null
+ 	* @post The event was sent to an sunscriber
+	* @inv Round robin pattern
+	*/
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
 		Queue<MicroService> subscribers = eventSubscribers.getOrDefault(e.getClass(), null);
@@ -125,13 +143,21 @@ public class MessageBusImpl implements MessageBus {
     	return null;
 	}
 	
-
+	/*
+	* @pre m!=null
+	* @post messageBus.isRegistered(service)==true - After registration, the microservice must be listed as registered
+	* @inv All registered microservices must have initialized message queues.
+	*/
 	@Override
 	public void register(MicroService m) {
 		microServiceQueues.putIfAbsent(m, new LinkedBlockingQueue<>());
 
 	}
-
+	/*
+	* @pre m!=null
+	* @post messageBus.isRegistered(service)==false - After unregistration, the microservice must be not listed
+	* @inv All unregistered microservices must not have initialized message queues 
+	*/
 	@Override
 	public void unregister(MicroService m) {
 		microServiceQueues.remove(m);

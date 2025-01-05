@@ -94,7 +94,17 @@ public class CameraService extends MicroService {
 
     // Processes detected objects at the given tick and sends DetectObjectsEvents
 
-    //Robi changed from private to public to use in Camera Test
+ /**
+ * @pre camera.isCameraActive() - The camera must be active to process detected objects.
+ * @pre !camera.getDetectedObjectsList().isEmpty() - There must be detected objects in the list.
+ *
+ * @post The DetectObjectsEvent is sent for each valid detection.
+ * @post StatisticalFolder.getDetectedObjectsCount() > 0 - Statistics must be updated with the count of detected objects.
+ *
+ * @inv camera.getDetectedObjectsList().forEach(object -> if object.getID().equals("ERROR") then crashedBroadcast sent 
+ * @inv camera.isCameraActive() == !camera.getDetectedObjectsList().isEmpty() - The camera status must reflect its activity.
+ */
+    // changed from private to public to use in Camera Test
     public void processDetectedObjects(int currentTick) {
 
         // Get the list of stamped detected objects

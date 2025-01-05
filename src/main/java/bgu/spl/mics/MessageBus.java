@@ -12,6 +12,7 @@ package bgu.spl.mics;
 public interface MessageBus {
 
     /**
+     * 
      * Subscribes {@code m} to receive {@link Event}s of type {@code type}.
      * <p>
      * @param <T>  The type of the result expected by the completed event.
