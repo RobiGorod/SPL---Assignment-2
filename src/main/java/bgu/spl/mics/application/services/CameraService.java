@@ -39,7 +39,6 @@ public class CameraService extends MicroService {
     public CameraService(Camera camera , CountDownLatch initializationLatch, String name) {
         super(name);
         this.camera = camera;
-        // this.statisticalFolder = statisticalFolder;
         this.initializationLatch = initializationLatch;
         this.needsToDetect = camera.getDetectedObjectsList().size();
         lastStampedDetectedObjects = null;
@@ -82,16 +81,7 @@ public class CameraService extends MicroService {
             // Subscribe to CrashedBroadcast
             subscribeBroadcast(CrashedBroadcast.class, crashedBroadcast -> {
                 camera.setStatus(STATUS.ERROR);
-
-                // Capture last frames (last detected objects)
-                // List<StampedDetectedObjects> DetectedObjects = camera.getDetectedObjectsList();
-                // int timestamp = StatisticalFolder.getInstance().getSystemRuntime()-1;
-                // DetectedObjects.stream()
-                // .filter(detected -> detected.getTime() == timestamp) 
-                // .flatMap(detected -> detected.getDetectedObjects().stream()) 
-                // .collect(Collectors.toList());
                 CrashedBroadcast.updateLastCameraFrames("Camera " + camera.getId(), lastStampedDetectedObjects);
-
                 terminate(); // Terminate the service due to the crash
             });
 
@@ -143,7 +133,6 @@ public class CameraService extends MicroService {
                 // Update the statistics
                 StatisticalFolder.getInstance().incrementDetectedObjects(stampedObjects.getDetectedObjects().size());
             }
-
         }   
     } 
 }

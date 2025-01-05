@@ -2,17 +2,13 @@ package bgu.spl.mics.application;
 
 import java.io.File;
 import java.io.FileReader;
-// import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-// import com.google.gson.JsonSyntaxException;
-
 import bgu.spl.mics.MessageBus;
 import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.MicroService;
@@ -175,9 +171,8 @@ public class GurionRockRunner {
             e.printStackTrace();
             System.err.println("Failed to initialize simulation. Error: " + e.getMessage());
         }
-        // System.out.println(Thread.currentThread().getName() + " was terminted <-------------");
-
     }
+    
     public static List<StampedDetectedObjects> fromCameraJsonToDetectedObjects(String filePath, String cameraKey) {
 
         List<StampedDetectedObjects> stampedDetectedObjectsList = new ArrayList<>();

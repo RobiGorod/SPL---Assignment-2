@@ -16,6 +16,7 @@ import com.google.gson.reflect.TypeToken;
  */
 public class LiDarDataBase {
     private static class LiDarDataBaseHolder{
+        
     // Singleton instance
     private static LiDarDataBase instance = new LiDarDataBase();
     }

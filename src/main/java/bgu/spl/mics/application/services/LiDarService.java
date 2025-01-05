@@ -31,8 +31,6 @@ import bgu.spl.mics.application.objects.DetectedObject;
 public class LiDarService extends MicroService {
 
     private final LiDarWorkerTracker LiDarWorkerTracker;
-    // private final StatisticalFolder statisticalFolder;
-    // private final LiDarDataBase liDarDataBase;
     private final CountDownLatch initializationLatch;
     private  List<DetectObjectsEvent> eventsInHold = new ArrayList<>();
     private int currentTick;
@@ -44,10 +42,8 @@ public class LiDarService extends MicroService {
      * @param LiDarWorkerTracker A LiDAR Tracker worker object that this service will use to process data.
      */
     public LiDarService(LiDarWorkerTracker LiDarWorkerTracker, CountDownLatch initializationLatch) {
-    //    System.out.println("ID" + LiDarWorkerTracker.getId());
         super("LiDarWorkerService_" + LiDarWorkerTracker.getId());
         this.LiDarWorkerTracker = LiDarWorkerTracker;
-        // this.liDarDataBase = LiDarDataBase.getInstance();
         this.initializationLatch = initializationLatch;
         currentTick = 0;
         lastTrackedObjects = null;
@@ -119,9 +115,7 @@ public class LiDarService extends MicroService {
                 LiDarWorkerTracker.setStatus(STATUS.ERROR); 
 
                 // Capture last frames (last tracked objects)
-                // List<TrackedObject> lastTrackedObjects = LiDarWorkerTracker.getLastTrackedObjects();
                 CrashedBroadcast.updateLastLiDarFrames("LiDarWorkerTracker "+ LiDarWorkerTracker.getId(), lastTrackedObjects);
-                
                 terminate(); // Terminate the service due to the crash
             });
 
@@ -171,7 +165,7 @@ public class LiDarService extends MicroService {
             for (StampedCloudPoints stampedPoint : matchingPoints) {
                 // Convert List<List<Double>> to List<CloudPoint>
                 List<CloudPoint> cloudPoints = stampedPoint.getCloudPoints().stream()
-                    .map(coord -> new CloudPoint(coord.get(0).intValue(), coord.get(1).intValue())) // Assuming CloudPoint(x, y)
+                    .map(coord -> new CloudPoint(coord.get(0).intValue(), coord.get(1).intValue())) 
                     .collect(Collectors.toList());
 
                 trackedObjects.add(new TrackedObject(

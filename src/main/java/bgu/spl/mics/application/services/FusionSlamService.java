@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,6 +25,7 @@ import bgu.spl.mics.application.messages.PoseEvent;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
 // import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrackedObjectsEvent;
+import bgu.spl.mics.application.objects.CloudPoint;
 import bgu.spl.mics.application.objects.FusionSlam;
 import bgu.spl.mics.application.objects.Pose;
 import bgu.spl.mics.application.objects.StatisticalFolder;
@@ -120,7 +122,7 @@ public class FusionSlamService extends MicroService {
                             return;
                         }
                         // Transform the object's coordinates to the global coordinate system
-                        fusionSlam.transformCoordinatesToGlobal(trackedObject, poseAtDetectionTime);
+                        trackedObject.setCoordinates(fusionSlam.transformCoordinatesToGlobal(trackedObject, poseAtDetectionTime));
 
                         // Update the map in FusionSLAM
                         if (fusionSlam.isNewLandmark(trackedObject)) {
@@ -175,7 +177,6 @@ public class FusionSlamService extends MicroService {
                     // Error case
                     System.out.println("Error: " + errorDescription);
                     System.out.println("Faulty Sensor: " + faultySensor);
-                    System.out.println("Last Frames: " + lastFrames);
                     System.out.println("Poses: " + fusionSlam.getPoses());
     
                     Map<String, Object> errorOutput = new LinkedHashMap<>();
@@ -235,13 +236,14 @@ private Map<String, Object> createStatisticsMap() {
 
     private Map<String, Object> convertLandmarksToMap(List<LandMark> landmarks) {
         Map<String, Object> landmarksMap = new LinkedHashMap<>();
-    for (LandMark landmark : landmarks) {
-        Map<String, Object> landmarkDetails = new LinkedHashMap<>();
-        landmarkDetails.put("id", landmark.getId());
-        landmarkDetails.put("description", landmark.getDescription());
-        landmarkDetails.put("coordinates", landmark.getCoordinates());
-        landmarksMap.put(landmark.getId(), landmarkDetails);
-    }
+        for (LandMark landmark : landmarks) {
+            Map<String, Object> landmarkDetails = new LinkedHashMap<>();
+            landmarkDetails.put("id", landmark.getId());
+            landmarkDetails.put("description", landmark.getDescription());
+            landmarkDetails.put("coordinates", landmark.getCoordinates());
+            landmarksMap.put(landmark.getId(), landmarkDetails);
+            
+        }
     return landmarksMap;
     }
 

@@ -28,4 +28,7 @@ public class LandMark {
     public List<CloudPoint> getCoordinates() {
         return coordinates;
     }
+    public void setCoordinates(List<CloudPoint> coordinates){
+        this.coordinates=coordinates;
+    }
 }

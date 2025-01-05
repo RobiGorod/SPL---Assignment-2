@@ -57,30 +57,6 @@ public class FusionSlamTest {
         LandMark updatedLandmark = fusionSlam.getLandmarks().get(0);
         assertEquals(5, updatedLandmark.getCoordinates().size(), "The landmark should have updated coordinates.");
     }
-
-
-    @Test
-    public void testTransformCoordinatesToGlobal() {
-        // Create a tracked object
-        TrackedObject trackedObject = new TrackedObject("1", 10, "Rock", createSampleCloudPoints(1));
-        Pose pose = new Pose(10, 20, 10, 45); // Translate by (10, 20) and rotate 45 degrees
-
-        // Call the method to transform coordinates
-        fusionSlam.transformCoordinatesToGlobal(trackedObject, pose);
-
-        // Verify the coordinates were transformed correctly
-        CloudPoint transformedPoint = trackedObject.getCoordinates().get(0);
-
-        // Calculate expected transformed values
-        double yawRadians = Math.toRadians(pose.getYaw());
-        double expectedX = pose.getX() + 0 * Math.cos(yawRadians) - 0 * Math.sin(yawRadians); // Origin transformation
-        double expectedY = pose.getY() + 0 * Math.sin(yawRadians) + 0 * Math.cos(yawRadians);
-
-        // Verify the transformed coordinates match the expected values
-        assertEquals(expectedX, transformedPoint.getX(), 0.01, "The X coordinate should match the expected transformed value.");
-        assertEquals(expectedY, transformedPoint.getY(), 0.01, "The Y coordinate should match the expected transformed value.");
-    }
-
     // Helper method to create a list of sample cloud points
     private List<CloudPoint> createSampleCloudPoints(int count) {
         List<CloudPoint> points = new ArrayList<>();

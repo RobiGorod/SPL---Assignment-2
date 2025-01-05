@@ -14,7 +14,6 @@ public class TimeService extends MicroService {
 
     private final int TickTime; // Duration of each tick in milliseconds
     private final int Duration; // Total number of ticks before termination
-    // private final StatisticalFolder statisticalFolder;
 
     /**
      * Constructor for TimeService.
@@ -26,7 +25,6 @@ public class TimeService extends MicroService {
         super("TimeService");
         this.TickTime = TickTime * 1000;  // Convertion to milliseconds
         this.Duration = Duration;
-        // this.statisticalFolder = statisticalFolder;
     }
 
     /**

@@ -35,4 +35,9 @@ public class TrackedObject {
     public List<CloudPoint> getCoordinates() {
         return coordinates;
     }
+
+    public void setCoordinates(List<CloudPoint> coor )
+    {
+        this.coordinates=coor;
+    }
 }

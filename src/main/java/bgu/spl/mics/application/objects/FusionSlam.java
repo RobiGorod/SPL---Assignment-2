@@ -2,6 +2,7 @@ package bgu.spl.mics.application.objects;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Manages the fusion of sensor data for simultaneous localization and mapping (SLAM).
@@ -15,8 +16,8 @@ public class FusionSlam {
     }
 
     // Fields
-    private final List<LandMark> landmarks; // Represents the map of the environment
-    private final List<Pose> poses;        // Represents previous poses needed for calculations
+    private final List<LandMark> landmarks; 
+    private final List<Pose> poses;        
     private boolean working;
 
     
@@ -26,9 +27,6 @@ public class FusionSlam {
         this.working = true;
 
     }
-
-   
-    // Provides access to the single instance of FusionSlam.
   
     public static FusionSlam getInstance() {
         return FusionSlamHolder.instance;
@@ -42,13 +40,11 @@ public class FusionSlam {
         working = false;
     }
 
-   // Retrieves the list of landmarks in the environment map.
 
    public List<LandMark> getLandmarks() {
        return landmarks;
    }
 
-   // Retrieves the list of previous poses needed for SLAM calculations.
     
    public List<Pose> getPoses() {
        return poses;
@@ -60,7 +56,7 @@ public class FusionSlam {
             return pose;
         }
     }
-    return null; // Return null if no pose matches the time
+    return null; 
 }
 
 public void updatePose(Pose newPose) {
@@ -78,15 +74,16 @@ public void updatePose(Pose newPose) {
  *
  * @inv fusionSlam.getLandmarks().stream().map(Landmark::getId).distinct().count() == fusionSlam.getLandmarks().size() - All landmarks must have unique IDs.
  */
-public void transformCoordinatesToGlobal(TrackedObject trackedObject, Pose pose) {
+public List<CloudPoint> transformCoordinatesToGlobal(TrackedObject trackedObject, Pose pose) {
     // Transform each cloud point in the tracked object to the global coordinate system
+    List<CloudPoint> global = new CopyOnWriteArrayList<>();
     double yawRadians = Math.toRadians(pose.getYaw());
     trackedObject.getCoordinates().forEach(point -> {
         double globalX = point.getX() * Math.cos(yawRadians)- point.getY() * Math.sin(yawRadians) + pose.getX()   ;
         double globalY = point.getX() * Math.sin(yawRadians) +point.getY() * Math.cos(yawRadians) + pose.getY()  ;
-        point.setX(globalX);
-        point.setY(globalY);
+        global.add(new CloudPoint(globalX, globalY));
     });
+    return global;
 }
 
 public boolean isNewLandmark(TrackedObject trackedObject) {
@@ -116,8 +113,8 @@ public void updateLandmark(TrackedObject trackedObject) {
             for (int i = 0; i < Math.min(existingCoordinates.size(), newCoordinates.size()); i++) {
                 CloudPoint existing = existingCoordinates.get(i);
                 CloudPoint newPoint = newCoordinates.get(i);
-                existing.setX((existing.getX() + newPoint.getX()) / 2);
-                existing.setY((existing.getY() + newPoint.getY()) / 2);
+                existing.setX((existing.getX() + newPoint.getX()) * 0.5);
+                existing.setY((existing.getY() + newPoint.getY()) * 0.5);
             }
 
             // Add coordinates that exist in the new list but not in the existing list
