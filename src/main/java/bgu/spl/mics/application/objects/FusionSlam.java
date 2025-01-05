@@ -82,8 +82,8 @@ public void transformCoordinatesToGlobal(TrackedObject trackedObject, Pose pose)
     // Transform each cloud point in the tracked object to the global coordinate system
     double yawRadians = Math.toRadians(pose.getYaw());
     trackedObject.getCoordinates().forEach(point -> {
-        double globalX = pose.getX() + point.getX() * Math.cos(yawRadians) - point.getY() * Math.sin(yawRadians);
-        double globalY = pose.getY() + point.getX() * Math.sin(yawRadians) + point.getY() * Math.cos(yawRadians);
+        double globalX = point.getX() * Math.cos(yawRadians)- point.getY() * Math.sin(yawRadians) + pose.getX()   ;
+        double globalY = point.getX() * Math.sin(yawRadians) +point.getY() * Math.cos(yawRadians) + pose.getY()  ;
         point.setX(globalX);
         point.setY(globalY);
     });

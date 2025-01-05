@@ -78,18 +78,16 @@ public class LiDarService extends MicroService {
                                 return;
                         }
                         else{ 
-                            List<Integer> processedIndexes = new ArrayList(); 
+                            List<DetectObjectsEvent> processedEvents = new ArrayList<>(); 
                         
                             if(eventsInHold.size() > 0){
                                 for(DetectObjectsEvent e : eventsInHold){
                                     if(currentTick >= (e.getTime()) + LiDarWorkerTracker.getFrequency()){
                                         processDetectedObjectsEvent(e);
-                                        processedIndexes.add(eventsInHold.indexOf(e));
+                                        processedEvents.add(e);
                                     }
                                 }
-                                for(int index : processedIndexes){
-                                    eventsInHold.remove(index);
-                                }
+                            eventsInHold.removeAll(processedEvents);
                             }
                         
                         }

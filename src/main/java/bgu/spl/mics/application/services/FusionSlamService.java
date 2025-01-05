@@ -91,11 +91,11 @@ public class FusionSlamService extends MicroService {
             // Subscribe to CrashedBroadcast
             subscribeBroadcast(CrashedBroadcast.class, crashedBroadcast -> {
                 
-                // fusionSlam.terminateFusionSlam();
+                fusionSlam.terminateFusionSlam();
                 // if(crashedBroadcast.getSender() == "Camera" || crashedBroadcast.getSender() == "Lidar"){
-                    int remainingSensors = activeSensors.decrementAndGet();
+                //     int remainingSensors = activeSensors.decrementAndGet();
                 
-                    // if (remainingSensors == 0){  
+                //     if (remainingSensors == 0){  
                     errorDescription = crashedBroadcast.getErrorDescription();
                     faultySensor = crashedBroadcast.getFaultySensor();
                     // Capture last frames from sensors
@@ -105,8 +105,9 @@ public class FusionSlamService extends MicroService {
                     outputFinalState();
                     terminate(); // Terminate the service due to a crash
                     }
-                // }
-            );
+        //         }
+        // }
+        );
 
             // Subscribe to TrackedObjectsEvent
             subscribeEvent(TrackedObjectsEvent.class, trackedObjectsEvent -> {

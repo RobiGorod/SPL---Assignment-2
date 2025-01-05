@@ -123,8 +123,8 @@ public class CameraService extends MicroService {
                 for(DetectedObject object: stampedObjects.getDetectedObjects()){
                     if (object.getId().equals("ERROR")) {
                         sendBroadcast(new CrashedBroadcast(object.getDescription(), "Camera" + camera.getId(),"Camera" ));
-                        // camera.setStatus(STATUS.ERROR);
-                        // terminate();
+                        camera.setStatus(STATUS.ERROR);
+                        terminate();
                         return;
                     }
                 }
