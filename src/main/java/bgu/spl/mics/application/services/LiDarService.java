@@ -35,8 +35,7 @@ public class LiDarService extends MicroService {
     private final LiDarDataBase liDarDataBase;
     private final CountDownLatch initializationLatch;
     private  List<DetectObjectsEvent> eventsInHold = new ArrayList<>();
-    private AtomicInteger currentTick;
-    private AtomicInteger activeCameras;
+    private int currentTick;
 
     /**
      * Constructor for LiDarService.
@@ -46,11 +45,9 @@ public class LiDarService extends MicroService {
     public LiDarService(LiDarWorkerTracker LiDarWorkerTracker,  LiDarDataBase liDarDataBase, CountDownLatch initializationLatch) {
         super("LiDarWorkerService_" + LiDarWorkerTracker.getId());
         this.LiDarWorkerTracker = LiDarWorkerTracker;
-        // this.statisticalFolder = statisticalFolder;
         this.liDarDataBase = LiDarDataBase.getInstance();
         this.initializationLatch = initializationLatch;
-        activeCameras.lazySet(0);
-        currentTick.lazySet(0);
+        currentTick = 0;
     }
 
     /**
@@ -65,12 +62,12 @@ public class LiDarService extends MicroService {
 
             // Subscribe to TickBroadcast
             subscribeBroadcast(TickBroadcast.class, tickBroadcast -> {
-                currentTick.lazySet(tickBroadcast.getCurrentTick()) ;
+                currentTick = tickBroadcast.getCurrentTick();
                 for( StampedCloudPoints CP : liDarDataBase.getCloudPoints()){
-                    if(CP.getTime() > currentTick.get()){
+                    if(CP.getTime() > currentTick){
                         break;
                     }
-                    else if(CP.getTime() == currentTick.get()){
+                    else if(CP.getTime() == currentTick){
                         if(CP.getId() == "ERROR"){
                             sendBroadcast(new CrashedBroadcast(
                                     "LiDAR sensor disconnected",
@@ -84,7 +81,7 @@ public class LiDarService extends MicroService {
                     List<Integer> processedIndexes = new ArrayList(); 
                     if(eventsInHold.size() > 0){
                         for(DetectObjectsEvent e : eventsInHold){
-                            if(currentTick.get() >= (e.getTime()) + LiDarWorkerTracker.getFrequency()){
+                            if(currentTick >= (e.getTime()) + LiDarWorkerTracker.getFrequency()){
                                 processDetectedObjectsEvent(e);
                                 processedIndexes.add(eventsInHold.indexOf(e));
                             }
@@ -129,7 +126,7 @@ public class LiDarService extends MicroService {
                 try {
 
                     // Check if the event should be processed at this tick
-                    if ((currentTick.get() >= (detectObjectsEvent.getTime()) + LiDarWorkerTracker.getFrequency())) {
+                    if ((currentTick >= (detectObjectsEvent.getTime()) + LiDarWorkerTracker.getFrequency())) {
                         processDetectedObjectsEvent(detectObjectsEvent);
                     }
 

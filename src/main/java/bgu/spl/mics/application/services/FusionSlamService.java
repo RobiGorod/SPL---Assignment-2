@@ -6,11 +6,14 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.stream.JsonWriter;
 
 // import bgu.spl.mics.MessageBus;
 // import bgu.spl.mics.MessageBusImpl;
@@ -143,14 +146,15 @@ public class FusionSlamService extends MicroService {
     // Outputs the final state of the system to a JSON file.
     private void outputFinalState() {
         System.out.println("Writing final state to JSON...");
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        try{
-            // Determine the directory of the configuration file
+        Gson gson = new GsonBuilder()
+            .disableHtmlEscaping()
+            .create();
+        
+        try {
             File configFile = new File(configPath);
-            String configDir = configFile.getParent(); // Get the parent directory of the configuration file
-            
-            // Construct the output file path
+            String configDir = configFile.getParent();
             File outputFile = new File(configDir, "output_file.json");
+            
             try (FileWriter writer = new FileWriter(outputFile)) {
                 System.out.println("---------------Output file parameters check---------------");
                 System.out.println("Statistics: Num Detected-" + StatisticalFolder.getInstance().getNumDetectedObjects() +
@@ -164,44 +168,72 @@ public class FusionSlamService extends MicroService {
                     System.out.println("Faulty Sensor: " + faultySensor);
                     System.out.println("Last Frames: " + lastFrames);
                     System.out.println("Poses: " + fusionSlam.getPoses());
-
-                    // Create the statistics map
-                    Map<String, Object> statistics = new HashMap<>();
-                    statistics.put("systemRuntime", StatisticalFolder.getInstance().getSystemRuntime());
-                    statistics.put("numDetectedObjects", StatisticalFolder.getInstance().getNumDetectedObjects());
-                    statistics.put("numTrackedObjects", StatisticalFolder.getInstance().getNumTrackedObjects());
-                    statistics.put("numLandmarks", StatisticalFolder.getInstance().getNumLandmarks());
-                    statistics.put("landMarks", fusionSlam.getLandmarks());
-        
-                    // Create the error-specific JSON structure
-                    Map<String, Object> errorOutput = new HashMap<>();
+    
+                    Map<String, Object> errorOutput = new LinkedHashMap<>();
                     errorOutput.put("error", errorDescription);
                     errorOutput.put("faultySensor", faultySensor);
                     errorOutput.put("lastCamerasFrame", lastFrames.get("cameras"));
                     errorOutput.put("lastLiDarWorkerTrackersFrame", lastFrames.get("LiDarWorkers"));
                     errorOutput.put("poses", fusionSlam.getPoses());
+                    
+                    Map<String, Object> statistics = createStatisticsMap();
                     errorOutput.put("statistics", statistics);
-        
-                    gson.toJson(errorOutput, writer);
-        
+                    errorOutput.put("landMarks", fusionSlam.getLandmarks());
+    
+                    // Write the first part without pretty printing
+                    writer.write(gson.toJson(errorOutput));
                 } else {
                     // Successful run
                     System.out.println("Landmarks: " + fusionSlam.getLandmarks());
-        
-                    // Create a success-specific JSON structure
-                    Map<String, Object> successOutput = new HashMap<>();
-                    successOutput.put("systemRuntime", StatisticalFolder.getInstance().getSystemRuntime());
-                    successOutput.put("numDetectedObjects", StatisticalFolder.getInstance().getNumDetectedObjects());
-                    successOutput.put("numTrackedObjects", StatisticalFolder.getInstance().getNumTrackedObjects());
-                    successOutput.put("numLandmarks", StatisticalFolder.getInstance().getNumLandmarks());
-                    successOutput.put("landMarks", fusionSlam.getLandmarks());
-        
-                    gson.toJson(successOutput, writer);
+    
+                    // Create the first part of the JSON (statistics)
+                    Map<String, Object> statistics = createStatisticsMap();
+                    String statsJson = gson.toJson(statistics);
+                    // Remove the closing brace
+                    statsJson = statsJson.substring(0, statsJson.length() - 1);
+                    writer.write(statsJson);
+                    
+                    // Add landmarks section with custom formatting
+                    writer.write(",\n\"landMarks\":{\n");
+                    
+                    // Convert landmarks to map
+                    Map<String, Object> landmarksMap = convertLandmarksToMap(fusionSlam.getLandmarks());
+                    boolean first = true;
+                    for (Map.Entry<String, Object> entry : landmarksMap.entrySet()) {
+                        if (!first) {
+                            writer.write(",\n");
+                        }
+                        writer.write("    \"" + entry.getKey() + "\":" + gson.toJson(entry.getValue()));
+                        first = false;
+                    }
+                    
+                    writer.write("\n    }\n}");
                 }
             }
         } catch (IOException e) {
             System.err.println("Error writing output file: " + e.getMessage());
         }
+    }
+
+private Map<String, Object> createStatisticsMap() {
+    Map<String, Object> statistics = new LinkedHashMap<>();
+    statistics.put("systemRuntime", StatisticalFolder.getInstance().getSystemRuntime());
+    statistics.put("numDetectedObjects", StatisticalFolder.getInstance().getNumDetectedObjects());
+    statistics.put("numTrackedObjects", StatisticalFolder.getInstance().getNumTrackedObjects());
+    statistics.put("numLandmarks", StatisticalFolder.getInstance().getNumLandmarks());
+    return statistics;
+}
+
+    private Map<String, Object> convertLandmarksToMap(List<LandMark> landmarks) {
+        Map<String, Object> landmarksMap = new LinkedHashMap<>();
+    for (LandMark landmark : landmarks) {
+        Map<String, Object> landmarkDetails = new LinkedHashMap<>();
+        landmarkDetails.put("id", landmark.getId());
+        landmarkDetails.put("description", landmark.getDescription());
+        landmarkDetails.put("coordinates", landmark.getCoordinates());
+        landmarksMap.put(landmark.getId(), landmarkDetails);
+    }
+    return landmarksMap;
     }
 
 }
